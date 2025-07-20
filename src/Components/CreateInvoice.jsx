@@ -5,13 +5,15 @@ import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { useInvoice } from '../contexts/InvoiceContext';
 import { products as catalogProducts } from '../data/products';
+import { loadProductsFromFirebase } from '../services/firebaseService';
 
 const CreateInvoice = ({ customers = [], onClose, onInvoiceCreated }) => {
   const { currentUser } = useAuth();
   const { selectedItems, getFormattedItems } = useInvoice();
   
-  // Use the fixed catalog products instead of props
-  const products = catalogProducts;
+  // Products state - load from Firebase to sync with ProductCatalog
+  const [products, setProducts] = useState([]);
+  const [productsLoading, setProductsLoading] = useState(true);
   
   // Customer data
   const [customerSearch, setCustomerSearch] = useState('');
@@ -41,6 +43,34 @@ const CreateInvoice = ({ customers = [], onClose, onInvoiceCreated }) => {
   
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // Load products from Firebase on component mount
+  useEffect(() => {
+    const loadProducts = async () => {
+      try {
+        const firebaseProducts = await loadProductsFromFirebase();
+        
+        if (firebaseProducts && firebaseProducts.length > 0) {
+          // Filter to only show available products
+          const availableProducts = firebaseProducts.filter(product => product.available);
+          setProducts(availableProducts);
+        } else {
+          // Fallback to catalog products if Firebase is empty
+          const availableProducts = catalogProducts.filter(product => product.available);
+          setProducts(availableProducts);
+        }
+      } catch (error) {
+        console.error('Error loading products for invoice:', error);
+        // Fallback to catalog products
+        const availableProducts = catalogProducts.filter(product => product.available);
+        setProducts(availableProducts);
+      } finally {
+        setProductsLoading(false);
+      }
+    };
+
+    loadProducts();
+  }, []);
 
   // Generate invoice number
   useEffect(() => {
@@ -264,6 +294,13 @@ const CreateInvoice = ({ customers = [], onClose, onInvoiceCreated }) => {
             </div>
           )}
 
+          {productsLoading && (
+            <div className="mb-4 p-4 bg-blue-50 border border-blue-200 text-blue-700 rounded-lg text-center">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto mb-2"></div>
+              Loading products...
+            </div>
+          )}
+
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             
             {/* Left Column - Customer & Invoice Details */}
@@ -480,8 +517,8 @@ const CreateInvoice = ({ customers = [], onClose, onInvoiceCreated }) => {
                       }}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
-                      <option value="">Select a product ({products.filter(p => p.available).length} available)</option>
-                      {products.filter(p => p.available).map((product) => (
+                      <option value="">Select a product ({products.length} in stock)</option>
+                      {products.map((product) => (
                         <option key={product.id} value={product.id}>
                           {product.name} ({product.size}) - {product.brand} - ${product.pricePerCase}/case ({product.unitsPerCase} units)
                         </option>

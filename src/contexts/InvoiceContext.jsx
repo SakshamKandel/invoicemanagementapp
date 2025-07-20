@@ -85,11 +85,8 @@ export const InvoiceProvider = ({ children }) => {
   };
 
   const openCreateInvoice = (navigationCallback = null) => {
-    if (selectedItems.length === 0) {
-      alert('Please select some products first before creating an invoice.');
-      return false;
-    }
-    
+    // Allow creating invoices even without pre-selected items
+    // Users can add products directly in the create invoice modal
     setPendingNavigation(navigationCallback);
     setIsCreateInvoiceOpen(true);
     return true;

@@ -24,7 +24,7 @@ const Login = () => {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center items-center">
       <div className="absolute top-0 left-0 p-4">
-        <img src={peakBrewLogo} alt="Peak Brew Logo" className="h-8 w-auto" />
+        <img src={peakBrewLogo} alt="Peak Brew Logo" className="h-12 w-auto" />
       </div>
       <div className="max-w-md w-full mx-auto">
         <div className="text-center mb-12">

@@ -257,12 +257,29 @@ const ProductCatalog = ({ onNavigateToInvoices }) => {
     }
   };
 
+  // Force update Firebase with correct image paths
+  const forceUpdateImages = async () => {
+    try {
+      console.log('🖼️ Forcing update of Firebase products with correct image paths...');
+      
+      // Clear and reset with correct data
+      await clearAllProductsFromFirebase();
+      await saveProductsToFirebase(fixedProducts, false);
+      
+      // Reload the page to refresh everything
+      window.location.reload();
+    } catch (error) {
+      console.error('Error forcing image update:', error);
+    }
+  };
+
   // Add debug functions for browser console
   window.resetProducts = resetFirebaseData;
   window.debugProducts = debugCurrentState;
   window.resetFilters = resetFilters;
   window.forceShowAll = forceShowAllProducts;
   window.testStockPersistence = testStockPersistence;
+  window.forceUpdateImages = forceUpdateImages;
 
   const handleCreateInvoice = () => {
     const success = openCreateInvoice(() => {

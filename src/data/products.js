@@ -1,8 +1,16 @@
-import barahsinghePilsnerImg from '../assets/Barahsinghe_pilsner_650ml-630x520-630x520.png';
-import barahsingheHazyImg from '../assets/Barashinghe Haxy.png';
-import gorkhaPremiumImg from '../assets/Gorkha Premium.png';
-import gorkhaStrongImg from '../assets/Gorkha Strong.png';
-import nepalIcePremiumImg from '../assets/Nepal Ice Premium.png';
+// Using images from assets folder as requested
+// src/assets/barahsinghe-hazy.png = Barahsinghe hazy
+// src/assets/barahsinghe-pilsner.png = Barahsinghe Pilsner (330ml)
+// src/assets/Barahsinghe_pilsner_650ml-630x520-630x520.png = Barahsinghe Pilsner (650ml)
+// src/assets/gorkha-premium.png = Gorkha Premium
+// src/assets/gorkha-strong.png = Gorkha Strong
+// src/assets/nepal-ice-premium.png = Nepal Ice
+const barahsinghePilsner330mlImg = '/images/barahsinghe-pilsner.png';
+const barahsinghePilsner650mlImg = '/images/Barahsinghe_pilsner_650ml-630x520-630x520.png';
+const barahsingheHazyImg = '/images/barahsinghe-hazy.png';
+const gorkhaPremiumImg = '/images/gorkha-premium.png';
+const gorkhaStrongImg = '/images/gorkha-strong.png';
+const nepalIcePremiumImg = '/images/nepal-ice-premium.png';
 
 export const products = [
   {
@@ -14,7 +22,7 @@ export const products = [
     unitsPerCase: 24,
     pricePerCase: 52,
     available: true,
-    image: barahsinghePilsnerImg,
+    image: barahsinghePilsner330mlImg,
     description: 'Premium Pilsner • 5%'
   },
   {
@@ -26,7 +34,7 @@ export const products = [
     unitsPerCase: 12,
     pricePerCase: 52,
     available: true,
-    image: barahsinghePilsnerImg,
+    image: barahsinghePilsner650mlImg,
     description: 'Premium Pilsner • 5%'
   },
   {

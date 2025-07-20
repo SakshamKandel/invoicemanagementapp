@@ -11,7 +11,7 @@ const Header = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           <div className="flex items-center space-x-4">
-            <img src={peakBrewLogo} alt="Peak Brew" className="h-8 w-8" />
+            <img src={peakBrewLogo} alt="Peak Brew" className="h-12 w-12" />
             <h1 className="text-xl font-semibold text-gray-900">Peak Brew Trading</h1>
           </div>
           
