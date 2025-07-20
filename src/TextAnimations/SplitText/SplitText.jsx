@@ -1,13 +1,8 @@
 /*
-	Installed from https://reactbits.dev/tailwind/
+	Simplified SplitText without GSAP SplitText plugin
 */
 
-import { useRef, useEffect } from "react";
-import { gsap } from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { SplitText as GSAPSplitText } from "gsap/SplitText";
-
-gsap.registerPlugin(ScrollTrigger, GSAPSplitText);
+import { useRef, useEffect, useState } from "react";
 
 const SplitText = ({
   text,
@@ -24,123 +19,86 @@ const SplitText = ({
   onLetterAnimationComplete,
 }) => {
   const ref = useRef(null);
-  const animationCompletedRef = useRef(false);
-  const scrollTriggerRef = useRef(null);
+  const [inView, setInView] = useState(false);
 
   useEffect(() => {
-    if (typeof window === "undefined" || !ref.current || !text) return;
+    if (!ref.current || !text) return;
 
-    const el = ref.current;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setInView(true);
+          observer.unobserve(ref.current);
+        }
+      },
+      { threshold, rootMargin }
+    );
 
-    animationCompletedRef.current = false;
+    observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, [threshold, rootMargin, text]);
 
-    const absoluteLines = splitType === "lines";
-    if (absoluteLines) el.style.position = "relative";
-
-    let splitter;
-    try {
-      splitter = new GSAPSplitText(el, {
-        type: splitType,
-        absolute: absoluteLines,
-        linesClass: "split-line",
-      });
-    } catch (error) {
-      console.error("Failed to create SplitText:", error);
-      return;
-    }
-
-    let targets;
-    switch (splitType) {
-      case "lines":
-        targets = splitter.lines;
-        break;
-      case "words":
-        targets = splitter.words;
-        break;
+  const splitText = (text, type) => {
+    switch (type) {
       case "chars":
-        targets = splitter.chars;
-        break;
+        return text.split("").map((char, i) => (
+          <span
+            key={i}
+            className="inline-block"
+            style={{
+              opacity: inView ? to.opacity : from.opacity,
+              transform: `translateY(${inView ? to.y || 0 : from.y || 40}px) rotateX(${inView ? to.rotationX || 0 : from.rotationX || 0}deg)`,
+              transition: `all ${duration}s ${ease} ${i * (delay / 1000)}s`,
+            }}
+          >
+            {char === " " ? "\u00A0" : char}
+          </span>
+        ));
+      case "words":
+        return text.split(" ").map((word, i) => (
+          <span key={i} className="inline-block mr-1">
+            {word.split("").map((char, j) => (
+              <span
+                key={j}
+                className="inline-block"
+                style={{
+                  opacity: inView ? to.opacity : from.opacity,
+                  transform: `translateY(${inView ? to.y || 0 : from.y || 40}px)`,
+                  transition: `all ${duration}s ${ease} ${(i * word.length + j) * (delay / 1000)}s`,
+                }}
+              >
+                {char}
+              </span>
+            ))}
+          </span>
+        ));
       default:
-        targets = splitter.chars;
+        return text.split("").map((char, i) => (
+          <span
+            key={i}
+            className="inline-block"
+            style={{
+              opacity: inView ? to.opacity : from.opacity,
+              transform: `translateY(${inView ? to.y || 0 : from.y || 40}px) rotateX(${inView ? to.rotationX || 0 : from.rotationX || 0}deg)`,
+              transition: `all ${duration}s ${ease} ${i * (delay / 1000)}s`,
+            }}
+          >
+            {char === " " ? "\u00A0" : char}
+          </span>
+        ));
     }
+  };
 
-    if (!targets || targets.length === 0) {
-      console.warn("No targets found for SplitText animation");
-      splitter.revert();
-      return;
+  useEffect(() => {
+    if (inView && onLetterAnimationComplete) {
+      const totalDelay = text.length * delay + duration * 1000;
+      const timer = setTimeout(onLetterAnimationComplete, totalDelay);
+      return () => clearTimeout(timer);
     }
-
-    targets.forEach((t) => {
-      t.style.willChange = "transform, opacity";
-    });
-
-    const startPct = (1 - threshold) * 100;
-    const marginMatch = /^(-?\d+(?:\.\d+)?)(px|em|rem|%)?$/.exec(rootMargin);
-    const marginValue = marginMatch ? parseFloat(marginMatch[1]) : 0;
-    const marginUnit = marginMatch ? marginMatch[2] || "px" : "px";
-    const sign =
-      marginValue < 0
-        ? `-=${Math.abs(marginValue)}${marginUnit}`
-        : `+=${marginValue}${marginUnit}`;
-    const start = `top ${startPct}%${sign}`;
-
-    const tl = gsap.timeline({
-      scrollTrigger: {
-        trigger: el,
-        start,
-        toggleActions: "play none none none",
-        once: true,
-        onToggle: (self) => {
-          scrollTriggerRef.current = self;
-        },
-      },
-      smoothChildTiming: true,
-      onComplete: () => {
-        animationCompletedRef.current = true;
-        gsap.set(targets, {
-          ...to,
-          clearProps: "willChange",
-          immediateRender: true,
-        });
-        onLetterAnimationComplete?.();
-      },
-    });
-
-    tl.set(targets, { ...from, immediateRender: false, force3D: true });
-    tl.to(targets, {
-      ...to,
-      duration,
-      ease,
-      stagger: delay / 1000,
-      force3D: true,
-    });
-
-    return () => {
-      tl.kill();
-      if (scrollTriggerRef.current) {
-        scrollTriggerRef.current.kill();
-        scrollTriggerRef.current = null;
-      }
-      gsap.killTweensOf(targets);
-      if (splitter) {
-        splitter.revert();
-      }
-    };
-  }, [
-    text,
-    delay,
-    duration,
-    ease,
-    splitType,
-    from,
-    to,
-    threshold,
-    rootMargin,
-    onLetterAnimationComplete,
-  ]);
+  }, [inView, onLetterAnimationComplete, text.length, delay, duration]);
 
   return (
-    <p
+    <div
       ref={ref}
       className={`split-parent overflow-hidden inline-block whitespace-normal ${className}`}
       style={{
@@ -148,8 +106,8 @@ const SplitText = ({
         wordWrap: "break-word",
       }}
     >
-      {text}
-    </p>
+      {splitText(text, splitType)}
+    </div>
   );
 };
 
