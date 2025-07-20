@@ -15,7 +15,10 @@ import {
   X,
   DollarSign,
   Calendar,
-  AlertCircle
+  AlertCircle,
+  Star,
+  Heart,
+  Award
 } from 'lucide-react';
 import { collection, addDoc, getDocs, updateDoc, deleteDoc, doc, query, orderBy } from 'firebase/firestore';
 import { db } from '../firebase';
@@ -44,6 +47,9 @@ const CustomerManagement = () => {
     zipCode: '',
     country: 'USA',
     businessType: 'restaurant',
+    paymentTerms: 'net30',
+    taxId: '',
+    creditLimit: '',
     notes: ''
   });
 
@@ -54,6 +60,14 @@ const CustomerManagement = () => {
     { id: 'distributor', label: 'Distributor' },
     { id: 'hotel', label: 'Hotel' },
     { id: 'other', label: 'Other' }
+  ];
+
+  const paymentTerms = [
+    { id: 'cash', label: 'Cash on Delivery' },
+    { id: 'net15', label: 'Net 15 Days' },
+    { id: 'net30', label: 'Net 30 Days' },
+    { id: 'net60', label: 'Net 60 Days' },
+    { id: 'net90', label: 'Net 90 Days' }
   ];
 
   useEffect(() => {
@@ -98,7 +112,7 @@ const CustomerManagement = () => {
     setFormData({
       businessName: '', contactPerson: '', email: '', phone: '',
       address: '', address2: '', city: '', state: '', zipCode: '', country: 'USA',
-      businessType: 'restaurant', notes: ''
+      businessType: 'restaurant', paymentTerms: 'net30', taxId: '', creditLimit: '', notes: ''
     });
   };
 
@@ -199,16 +213,20 @@ const CustomerManagement = () => {
   };
 
   const CustomerCard = ({ customer }) => {
-    const getBusinessTypeColor = (type) => {
-      const colors = {
-        restaurant: 'bg-emerald-100 text-emerald-800 border-emerald-200',
-        bar: 'bg-amber-100 text-amber-800 border-amber-200',
-        retail: 'bg-blue-100 text-blue-800 border-blue-200',
-        distributor: 'bg-purple-100 text-purple-800 border-purple-200',
-        hotel: 'bg-rose-100 text-rose-800 border-rose-200',
-        other: 'bg-gray-100 text-gray-800 border-gray-200'
+    const getBusinessIcon = (type) => {
+      const icons = {
+        restaurant: '🍽️',
+        bar: '🍺',
+        retail: '🏪',
+        distributor: '🚚',
+        hotel: '🏨',
+        other: '🏢'
       };
-      return colors[type] || colors.other;
+      return icons[type] || icons.other;
+    };
+
+    const getInitials = (name) => {
+      return name?.split(' ').map(word => word[0]).join('').toUpperCase() || '??';
     };
 
     return (
@@ -217,112 +235,106 @@ const CustomerManagement = () => {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -20 }}
-        whileHover={{ y: -8, boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)" }}
-        className="group bg-white rounded-3xl shadow-sm hover:shadow-2xl transition-all duration-500 overflow-hidden border border-gray-100 cursor-pointer relative"
+        whileHover={{ y: -4, boxShadow: "0 20px 40px -12px rgba(0, 0, 0, 0.15)" }}
+        className="group bg-white rounded-3xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 cursor-pointer relative"
       >
-        {/* Card Header with Gradient */}
-        <div className="h-24 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 relative">
-          <div className="absolute inset-0 bg-black/10"></div>
+        {/* Airbnb-style Header with Solid Red */}
+        <div className="relative h-32 bg-red-500">
           <div className="absolute top-4 right-4">
-            <span className={`px-3 py-1.5 rounded-full text-xs font-semibold border ${getBusinessTypeColor(customer.businessType)} backdrop-blur-sm`}>
-              {customer.businessType.charAt(0).toUpperCase() + customer.businessType.slice(1)}
-            </span>
+            <div className="px-3 py-1 bg-white/90 backdrop-blur-sm rounded-full text-xs font-semibold text-gray-700 border border-white/20">
+              {customer.businessType?.charAt(0).toUpperCase() + customer.businessType?.slice(1)}
+            </div>
+          </div>
+          
+          {/* Profile Avatar positioned to overlap */}
+          <div className="absolute -bottom-8 left-6">
+            <div className="w-16 h-16 bg-white rounded-full shadow-lg flex items-center justify-center border-4 border-white">
+              <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
+                <span className="text-lg font-bold text-gray-600">
+                  {getInitials(customer.businessName)}
+                </span>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Card Content */}
-        <div className="p-6 -mt-4 relative">
-          {/* Business Avatar */}
-          <div className="w-16 h-16 bg-white rounded-2xl shadow-lg flex items-center justify-center mb-4 border-4 border-white">
-            <Building className="w-8 h-8 text-gray-600" />
-          </div>
-
-          {/* Business Info */}
-          <div className="mb-6">
-            <h3 className="text-xl font-bold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors truncate">
+        {/* Content */}
+        <div className="pt-12 px-6 pb-6">
+          {/* Business Name and Contact Person */}
+          <div className="mb-4">
+            <h3 className="text-xl font-bold text-gray-900 mb-1 line-clamp-1">
               {customer.businessName}
             </h3>
-            <div className="flex items-center text-gray-600 mb-3">
-              <User className="w-4 h-4 mr-2 text-gray-400" />
-              <span className="text-sm font-medium">{customer.contactPerson}</span>
-            </div>
+            <p className="text-gray-600 flex items-center gap-2">
+              <User className="w-4 h-4" />
+              {customer.contactPerson}
+            </p>
           </div>
 
-          {/* Contact Details */}
+          {/* Contact Details with Airbnb styling */}
           <div className="space-y-3 mb-6">
-            <div className="flex items-center group/item hover:bg-gray-50 -mx-2 px-2 py-1 rounded-lg transition-colors">
-              <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center mr-3">
-                <Mail className="w-4 h-4 text-blue-600" />
+            <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
+              <div className="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
+                <Mail className="w-4 h-4 text-red-600" />
               </div>
               <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-gray-900">Email</p>
                 <p className="text-sm text-gray-600 truncate">{customer.email}</p>
               </div>
             </div>
-            
-            <div className="flex items-center group/item hover:bg-gray-50 -mx-2 px-2 py-1 rounded-lg transition-colors">
-              <div className="w-8 h-8 bg-green-50 rounded-lg flex items-center justify-center mr-3">
-                <Phone className="w-4 h-4 text-green-600" />
+
+            <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
+              <div className="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
+                <Phone className="w-4 h-4 text-red-600" />
               </div>
-              <div className="flex-1">
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-gray-900">Phone</p>
                 <p className="text-sm text-gray-600">{customer.phone}</p>
               </div>
             </div>
 
-            {(customer.city || customer.state) && (
-              <div className="flex items-center group/item hover:bg-gray-50 -mx-2 px-2 py-1 rounded-lg transition-colors">
-                <div className="w-8 h-8 bg-red-50 rounded-lg flex items-center justify-center mr-3">
-                  <MapPin className="w-4 h-4 text-red-600" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm text-gray-600">
-                    {customer.city}{customer.city && customer.state ? ', ' : ''}{customer.state}
-                  </p>
-                </div>
+            <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
+              <div className="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
+                <MapPin className="w-4 h-4 text-red-600" />
               </div>
-            )}
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-gray-900">Location</p>
+                <p className="text-sm text-gray-600">{customer.address || `${customer.city}, ${customer.state}`}</p>
+              </div>
+            </div>
           </div>
 
-          {/* Business Info */}
-          <div className="bg-gray-50 rounded-xl p-4 mb-6">
-            <div className="flex justify-between items-center">
-              <span className="text-sm font-medium text-gray-600">Business Type</span>
-              <span className="text-sm font-semibold text-gray-900 capitalize">
-                {customer.businessType}
-              </span>
+          {/* Business Type Badge */}
+          <div className="mb-6">
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-red-50 rounded-full border border-red-200">
+              <span className="text-lg">{getBusinessIcon(customer.businessType)}</span>
+              <span className="text-sm font-medium text-red-700">{customer.businessType}</span>
             </div>
-            {customer.notes && (
-              <div className="mt-3 pt-3 border-t border-gray-200">
-                <p className="text-xs text-gray-500 italic">{customer.notes}</p>
-              </div>
-            )}
           </div>
 
           {/* Action Buttons */}
-          <div className="flex space-x-3">
+          <div className="flex gap-2">
             <button
               onClick={(e) => {
                 e.stopPropagation();
                 handleEdit(customer);
               }}
-              className="flex-1 flex items-center justify-center space-x-2 py-3 px-4 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-xl transition-all duration-200 group/btn"
+              className="flex-1 bg-gray-900 text-white px-4 py-3 rounded-xl font-medium hover:bg-gray-800 transition-colors duration-200 flex items-center justify-center gap-2"
             >
-              <Edit3 className="w-4 h-4 group-hover/btn:scale-110 transition-transform" />
-              <span className="font-medium">Edit</span>
+              <Edit3 className="w-4 h-4" />
+              Edit
             </button>
             <button
               onClick={(e) => {
                 e.stopPropagation();
                 handleDelete(customer.id);
               }}
-              className="flex items-center justify-center p-3 bg-red-50 hover:bg-red-100 text-red-700 rounded-xl transition-all duration-200 group/btn"
+              className="px-4 py-3 bg-red-50 text-red-600 rounded-xl hover:bg-red-100 transition-colors duration-200 flex items-center justify-center"
             >
-              <Trash2 className="w-4 h-4 group-hover/btn:scale-110 transition-transform" />
+              <Trash2 className="w-4 h-4" />
             </button>
           </div>
         </div>
-
-        {/* Hover Effect Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
       </motion.div>
     );
   };
@@ -339,19 +351,19 @@ const CustomerManagement = () => {
                   Customer Management
                 </h1>
                 <p className="text-lg text-gray-600 mb-4">
-                  Manage your business relationships and customer information
+                  Manage your business relationships like Airbnb hosts
                 </p>
                 <div className="flex flex-wrap items-center gap-6 text-sm text-gray-500">
                   <div className="flex items-center">
-                    <div className="w-2 h-2 bg-green-400 rounded-full mr-2"></div>
+                    <div className="w-2 h-2 bg-red-400 rounded-full mr-2"></div>
                     <span className="font-medium">{customers.length} Total Customers</span>
                   </div>
                   <div className="flex items-center">
-                    <div className="w-2 h-2 bg-blue-400 rounded-full mr-2"></div>
+                    <div className="w-2 h-2 bg-red-400 rounded-full mr-2"></div>
                     <span className="font-medium">{filteredCustomers.length} Currently Showing</span>
                   </div>
                   <div className="flex items-center">
-                    <div className="w-2 h-2 bg-orange-400 rounded-full mr-2"></div>
+                    <div className="w-2 h-2 bg-red-400 rounded-full mr-2"></div>
                     <span className="font-medium">
                       {Array.from(new Set(customers.map(c => c.businessType))).length} Business Types
                     </span>
@@ -361,14 +373,14 @@ const CustomerManagement = () => {
               <div className="mt-6 md:mt-0 flex flex-col sm:flex-row gap-3">
                 <button
                   onClick={exportCustomers}
-                  className="flex items-center justify-center space-x-2 px-6 py-3 bg-white border-2 border-gray-300 text-gray-700 rounded-xl hover:border-gray-400 hover:bg-gray-50 transition-all duration-200 font-medium"
+                  className="flex items-center justify-center space-x-2 px-6 py-3 bg-white border-2 border-gray-300 text-gray-700 rounded-xl hover:border-red-300 hover:bg-red-50 transition-all duration-200 font-medium"
                 >
                   <Download className="w-5 h-5" />
                   <span>Export Data</span>
                 </button>
                 <button
                   onClick={() => handleOpenModal()}
-                  className="flex items-center justify-center space-x-2 px-6 py-3 bg-gray-900 hover:bg-gray-800 text-white rounded-xl transition-all duration-200 font-medium shadow-lg hover:shadow-xl"
+                  className="flex items-center justify-center space-x-2 px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl transition-all duration-200 font-medium shadow-lg hover:shadow-xl"
                 >
                   <Plus className="w-5 h-5" />
                   <span>Add Customer</span>
@@ -395,7 +407,7 @@ const CustomerManagement = () => {
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="Search customers, contacts, or businesses..."
-                    className="block w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-all duration-200 text-gray-900 placeholder-gray-500"
+                    className="block w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200 text-gray-900 placeholder-gray-500"
                   />
                 </div>
               </div>
@@ -409,7 +421,7 @@ const CustomerManagement = () => {
                 <select
                   value={selectedFilter}
                   onChange={(e) => setSelectedFilter(e.target.value)}
-                  className="px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-gray-900 focus:border-transparent font-medium bg-white min-w-[140px]"
+                  className="px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent font-medium bg-white min-w-[140px]"
                 >
                   <option value="all">All Types</option>
                   {businessTypes.map((type) => (
@@ -423,12 +435,12 @@ const CustomerManagement = () => {
                     <span className="text-sm text-gray-500">Active filters:</span>
                     <div className="flex space-x-2">
                       {searchQuery && (
-                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
                           Search: "{searchQuery}"
                         </span>
                       )}
                       {selectedFilter !== 'all' && (
-                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
                           Type: {businessTypes.find(t => t.id === selectedFilter)?.label}
                         </span>
                       )}
@@ -445,13 +457,13 @@ const CustomerManagement = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20">
-            <div className="animate-spin rounded-full h-12 w-12 border-2 border-gray-900 border-t-transparent mb-4"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-2 border-red-600 border-t-transparent mb-4"></div>
             <p className="text-gray-600">Loading customers...</p>
           </div>
         ) : filteredCustomers.length === 0 ? (
           <div className="text-center py-20">
-            <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
-              <User className="w-12 h-12 text-gray-400" />
+            <div className="w-24 h-24 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <User className="w-12 h-12 text-red-500" />
             </div>
             <h3 className="text-2xl font-bold text-gray-900 mb-2">
               {searchQuery || selectedFilter !== 'all' ? 'No customers found' : 'No customers yet'}
@@ -463,7 +475,7 @@ const CustomerManagement = () => {
             </p>
             <button
               onClick={() => handleOpenModal()}
-              className="inline-flex items-center space-x-2 px-6 py-3 bg-gray-900 hover:bg-gray-800 text-white rounded-xl transition-all duration-200 font-medium shadow-lg hover:shadow-xl"
+              className="inline-flex items-center space-x-2 px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl transition-all duration-200 font-medium shadow-lg hover:shadow-xl"
             >
               <Plus className="w-5 h-5" />
               <span>Add Your First Customer</span>
@@ -487,7 +499,7 @@ const CustomerManagement = () => {
               {/* View options could go here in the future */}
               <div className="hidden sm:flex items-center space-x-2">
                 <span className="text-sm text-gray-500">View:</span>
-                <button className="p-2 bg-gray-900 text-white rounded-lg">
+                <button className="p-2 bg-red-600 text-white rounded-lg">
                   <Building className="w-4 h-4" />
                 </button>
               </div>
@@ -515,21 +527,21 @@ const CustomerManagement = () => {
             className="bg-white rounded-3xl shadow-2xl max-w-4xl w-full max-h-[95vh] overflow-hidden"
           >
             {/* Modal Header */}
-            <div className="bg-gray-50 px-8 py-6 border-b border-gray-200">
+            <div className="bg-red-500 px-8 py-6 text-white">
               <div className="flex justify-between items-center">
                 <div>
-                  <h2 className="text-2xl font-bold text-gray-900">
+                  <h2 className="text-2xl font-bold">
                     {selectedCustomer ? 'Edit Customer Details' : 'Add New Customer'}
                   </h2>
-                  <p className="text-gray-600 mt-1">
+                  <p className="text-red-100 mt-1">
                     {selectedCustomer ? 'Update customer information and business details' : 'Enter customer information to get started'}
                   </p>
                 </div>
                 <button
                   onClick={handleCloseModal}
-                  className="p-2 hover:bg-gray-200 rounded-full transition-colors"
+                  className="p-2 hover:bg-white/20 rounded-full transition-colors"
                 >
-                  <X className="w-6 h-6 text-gray-500" />
+                  <X className="w-6 h-6 text-white" />
                 </button>
               </div>
             </div>
@@ -548,7 +560,7 @@ const CustomerManagement = () => {
               <form onSubmit={handleSubmit} className="p-8 space-y-8">
                 {/* Basic Information */}
                 <div className="space-y-6">
-                  <div className="border-l-4 border-blue-500 pl-4">
+                  <div className="border-l-4 border-red-500 pl-4">
                     <h3 className="text-lg font-semibold text-gray-900">Basic Information</h3>
                     <p className="text-sm text-gray-600 mt-1">Essential details about the customer and business</p>
                   </div>
@@ -563,7 +575,7 @@ const CustomerManagement = () => {
                         value={formData.businessName}
                         onChange={(e) => handleInputChange('businessName', e.target.value)}
                         required
-                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200"
                         placeholder="e.g., Mountain View Restaurant"
                       />
                     </div>
@@ -577,7 +589,7 @@ const CustomerManagement = () => {
                         value={formData.contactPerson}
                         onChange={(e) => handleInputChange('contactPerson', e.target.value)}
                         required
-                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200"
                         placeholder="e.g., John Smith"
                       />
                     </div>
@@ -591,7 +603,7 @@ const CustomerManagement = () => {
                         value={formData.email}
                         onChange={(e) => handleInputChange('email', e.target.value)}
                         required
-                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200"
                         placeholder="john@example.com"
                       />
                     </div>
@@ -605,7 +617,7 @@ const CustomerManagement = () => {
                         value={formData.phone}
                         onChange={(e) => handleInputChange('phone', e.target.value)}
                         required
-                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200"
                         placeholder="+1 (555) 123-4567"
                       />
                     </div>
@@ -614,7 +626,7 @@ const CustomerManagement = () => {
 
                 {/* Address Information */}
                 <div className="space-y-6">
-                  <div className="border-l-4 border-green-500 pl-4">
+                  <div className="border-l-4 border-red-500 pl-4">
                     <h3 className="text-lg font-semibold text-gray-900">Address Information</h3>
                     <p className="text-sm text-gray-600 mt-1">Business location and shipping details</p>
                   </div>
@@ -625,7 +637,7 @@ const CustomerManagement = () => {
                         type="text"
                         value={formData.address}
                         onChange={(e) => handleInputChange('address', e.target.value)}
-                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200"
                         placeholder="123 Main Street"
                       />
                     </div>
@@ -635,7 +647,7 @@ const CustomerManagement = () => {
                         type="text"
                         value={formData.address2}
                         onChange={(e) => handleInputChange('address2', e.target.value)}
-                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200"
                         placeholder="Suite 100, Building A"
                       />
                     </div>
@@ -646,7 +658,7 @@ const CustomerManagement = () => {
                           type="text"
                           value={formData.city}
                           onChange={(e) => handleInputChange('city', e.target.value)}
-                          className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                          className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200"
                           placeholder="San Francisco"
                         />
                       </div>
@@ -656,7 +668,7 @@ const CustomerManagement = () => {
                           type="text"
                           value={formData.state}
                           onChange={(e) => handleInputChange('state', e.target.value)}
-                          className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                          className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200"
                           placeholder="CA"
                         />
                       </div>
@@ -666,7 +678,7 @@ const CustomerManagement = () => {
                           type="text"
                           value={formData.zipCode}
                           onChange={(e) => handleInputChange('zipCode', e.target.value)}
-                          className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                          className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200"
                           placeholder="94102"
                         />
                       </div>
@@ -676,7 +688,7 @@ const CustomerManagement = () => {
                           type="text"
                           value={formData.country}
                           onChange={(e) => handleInputChange('country', e.target.value)}
-                          className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                          className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200"
                           placeholder="United States"
                         />
                       </div>
@@ -686,7 +698,7 @@ const CustomerManagement = () => {
 
                 {/* Business Details */}
                 <div className="space-y-6">
-                  <div className="border-l-4 border-purple-500 pl-4">
+                  <div className="border-l-4 border-red-500 pl-4">
                     <h3 className="text-lg font-semibold text-gray-900">Business Details</h3>
                     <p className="text-sm text-gray-600 mt-1">Business classification and financial terms</p>
                   </div>
@@ -696,7 +708,7 @@ const CustomerManagement = () => {
                       <select
                         value={formData.businessType}
                         onChange={(e) => handleInputChange('businessType', e.target.value)}
-                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200"
                       >
                         {businessTypes.map((type) => (
                           <option key={type.id} value={type.id}>{type.label}</option>
@@ -708,7 +720,7 @@ const CustomerManagement = () => {
                       <select
                         value={formData.paymentTerms}
                         onChange={(e) => handleInputChange('paymentTerms', e.target.value)}
-                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200"
                       >
                         {paymentTerms.map((term) => (
                           <option key={term.id} value={term.id}>{term.label}</option>
@@ -721,7 +733,7 @@ const CustomerManagement = () => {
                         type="text"
                         value={formData.taxId}
                         onChange={(e) => handleInputChange('taxId', e.target.value)}
-                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200"
                         placeholder="XX-XXXXXXX"
                       />
                     </div>
@@ -734,7 +746,7 @@ const CustomerManagement = () => {
                           step="0.01"
                           value={formData.creditLimit}
                           onChange={(e) => handleInputChange('creditLimit', e.target.value)}
-                          className="w-full pl-8 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                          className="w-full pl-8 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200"
                           placeholder="0.00"
                         />
                       </div>
@@ -744,7 +756,7 @@ const CustomerManagement = () => {
 
                 {/* Notes */}
                 <div className="space-y-6">
-                  <div className="border-l-4 border-orange-500 pl-4">
+                  <div className="border-l-4 border-red-500 pl-4">
                     <h3 className="text-lg font-semibold text-gray-900">Additional Notes</h3>
                     <p className="text-sm text-gray-600 mt-1">Any special instructions or important information</p>
                   </div>
@@ -754,7 +766,7 @@ const CustomerManagement = () => {
                       value={formData.notes}
                       onChange={(e) => handleInputChange('notes', e.target.value)}
                       rows={4}
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 resize-none"
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200 resize-none"
                       placeholder="Add any special notes, preferences, or important details about this customer..."
                     />
                   </div>
@@ -774,7 +786,7 @@ const CustomerManagement = () => {
               <button
                 onClick={handleSubmit}
                 disabled={loading}
-                className="w-full sm:w-auto px-8 py-3 bg-gray-900 hover:bg-gray-800 text-white rounded-xl font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl"
+                className="w-full sm:w-auto px-8 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl"
               >
                 {loading ? (
                   <div className="flex items-center justify-center space-x-2">

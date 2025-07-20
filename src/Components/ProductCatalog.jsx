@@ -331,12 +331,12 @@ const ProductCatalog = ({ onNavigateToInvoices }) => {
     <div className="min-h-screen bg-white">
       {/* Header */}
       <div className="border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between">
             <div>
-              <h1 className="text-3xl font-semibold text-gray-900 mb-2">Premium Beer Collection</h1>
-              <p className="text-lg text-gray-600">Authentic Nepalese craft beers</p>
-              <div className="mt-4 flex items-center space-x-6 text-sm text-gray-500">
+              <h1 className="text-2xl md:text-3xl font-semibold text-gray-900 mb-2">Premium Beer Collection</h1>
+              <p className="text-base md:text-lg text-gray-600">Authentic Nepalese craft beers</p>
+              <div className="mt-4 flex flex-wrap items-center gap-4 md:gap-6 text-sm text-gray-500">
                 <span className="flex items-center">
                   <Package className="w-4 h-4 mr-1" />
                   {products.length} Premium Products
@@ -353,8 +353,8 @@ const ProductCatalog = ({ onNavigateToInvoices }) => {
 
       {/* Search and Filter */}
       <div className="border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-6">
+          <div className="flex flex-col space-y-4 lg:flex-row lg:items-center lg:justify-between lg:space-y-0">
             <div className="flex-1 max-w-md">
               <div className="relative">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -363,37 +363,39 @@ const ProductCatalog = ({ onNavigateToInvoices }) => {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search beers..."
-                  className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900 transition-all duration-200"
+                  className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-rose-500 transition-all duration-200 text-sm md:text-base"
                 />
               </div>
             </div>
             
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-2">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-3 sm:space-y-0 sm:space-x-4">
+              <div className="flex items-center space-x-2 justify-center sm:justify-start">
                 <Filter className="w-5 h-5 text-gray-500" />
                 <span className="text-sm font-medium text-gray-700">Filter by:</span>
               </div>
               
-              <select
-                value={selectedBrand}
-                onChange={(e) => setSelectedBrand(e.target.value)}
-                className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900 transition-all duration-200 font-medium"
-              >
-                <option value="all">All Brands</option>
-                {brands.map((brand) => (
-                  <option key={brand} value={brand}>{brand}</option>
-                ))}
-              </select>
-              
-              <select
-                value={selectedAvailability}
-                onChange={(e) => setSelectedAvailability(e.target.value)}
-                className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900 transition-all duration-200 font-medium"
-              >
-                <option value="all">All Availability</option>
-                <option value="available">In Stock</option>
-                <option value="unavailable">Out of Stock</option>
-              </select>
+              <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
+                <select
+                  value={selectedBrand}
+                  onChange={(e) => setSelectedBrand(e.target.value)}
+                  className="px-3 py-2 md:px-4 md:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-rose-500 transition-all duration-200 font-medium text-sm md:text-base min-w-0 flex-1 sm:flex-none"
+                >
+                  <option value="all">All Brands</option>
+                  {brands.map((brand) => (
+                    <option key={brand} value={brand}>{brand}</option>
+                  ))}
+                </select>
+                
+                <select
+                  value={selectedAvailability}
+                  onChange={(e) => setSelectedAvailability(e.target.value)}
+                  className="px-3 py-2 md:px-4 md:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-rose-500 transition-all duration-200 font-medium text-sm md:text-base min-w-0 flex-1 sm:flex-none"
+                >
+                  <option value="all">All Availability</option>
+                  <option value="available">In Stock</option>
+                  <option value="unavailable">Out of Stock</option>
+                </select>
+              </div>
             </div>
           </div>
         </div>
@@ -402,15 +404,15 @@ const ProductCatalog = ({ onNavigateToInvoices }) => {
       {/* Shopping Cart */}
       {selectedItems.length > 0 && (
         <div className="border-b border-gray-200 bg-gray-50">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <div className="flex justify-between items-center mb-4">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-6">
+            <div className="bg-white rounded-lg border border-gray-200 p-4 md:p-6">
+              <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-4 space-y-3 md:space-y-0">
                 <h3 className="text-lg font-semibold text-gray-900 flex items-center">
                   <ShoppingCart className="w-5 h-5 mr-2" />
-                  Shopping Cart ({getTotalItems()} items)
+                  Cart ({getTotalItems()} items)
                 </h3>
-                <div className="flex items-center space-x-3">
-                  <div className="text-right">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-3 sm:space-y-0 sm:space-x-3">
+                  <div className="text-center sm:text-right order-3 sm:order-1">
                     <div className="text-sm text-gray-600">{selectedItems.length} products</div>
                     <div className="text-xl font-bold text-gray-900">
                       ${getTotalAmount().toFixed(2)}
@@ -418,14 +420,14 @@ const ProductCatalog = ({ onNavigateToInvoices }) => {
                   </div>
                   <button
                     onClick={handleCreateInvoice}
-                    className="flex items-center space-x-2 px-6 py-3 bg-rose-500 hover:bg-rose-600 text-white rounded-lg font-medium transition-all duration-200 shadow-sm hover:shadow-md"
+                    className="flex items-center justify-center space-x-2 px-4 py-3 md:px-6 bg-rose-500 hover:bg-rose-600 text-white rounded-lg font-medium transition-all duration-200 shadow-sm hover:shadow-md order-1 sm:order-2 text-sm md:text-base"
                   >
-                    <FileText className="w-5 h-5" />
+                    <FileText className="w-4 h-4 md:w-5 md:h-5" />
                     <span>Create Invoice</span>
                   </button>
                   <button
                     onClick={clearItems}
-                    className="p-2 text-gray-400 hover:text-gray-600 transition-colors duration-200 hover:bg-gray-100 rounded-lg"
+                    className="p-2 text-gray-400 hover:text-gray-600 transition-colors duration-200 hover:bg-gray-100 rounded-lg self-center order-2 sm:order-3"
                     title="Clear all items"
                   >
                     <X className="w-5 h-5" />
@@ -434,28 +436,28 @@ const ProductCatalog = ({ onNavigateToInvoices }) => {
               </div>
               <div className="space-y-2">
                 {selectedItems.map((item) => (
-                  <div key={item.id} className="flex justify-between items-center bg-gray-50 rounded-lg p-3">
-                    <div className="flex-1">
-                      <span className="font-medium text-gray-900">{item.name}</span>
+                  <div key={item.id} className="flex flex-col sm:flex-row sm:justify-between sm:items-center bg-gray-50 rounded-lg p-3 space-y-2 sm:space-y-0">
+                    <div className="flex-1 min-w-0">
+                      <span className="font-medium text-gray-900 text-sm md:text-base">{item.name}</span>
                       <span className="text-sm text-gray-500 ml-2">({item.brand})</span>
                     </div>
-                    <div className="flex items-center space-x-3">
+                    <div className="flex items-center justify-between sm:justify-end space-x-3">
                       <div className="flex items-center space-x-2">
                         <button
                           onClick={() => updateItemQuantity(item.id, item.quantity - 1)}
-                          className="w-7 h-7 rounded-full border border-gray-300 hover:border-gray-400 bg-white hover:bg-gray-50 flex items-center justify-center text-sm font-medium transition-all duration-200"
+                          className="w-8 h-8 rounded-full border border-gray-300 hover:border-gray-400 bg-white hover:bg-gray-50 flex items-center justify-center text-sm font-medium transition-all duration-200"
                         >
                           -
                         </button>
-                        <span className="text-sm font-medium w-8 text-center">{item.quantity}</span>
+                        <span className="text-sm font-medium w-10 text-center">{item.quantity}</span>
                         <button
                           onClick={() => updateItemQuantity(item.id, item.quantity + 1)}
-                          className="w-7 h-7 rounded-full border border-gray-300 hover:border-gray-400 bg-white hover:bg-gray-50 flex items-center justify-center text-sm font-medium transition-all duration-200"
+                          className="w-8 h-8 rounded-full border border-gray-300 hover:border-gray-400 bg-white hover:bg-gray-50 flex items-center justify-center text-sm font-medium transition-all duration-200"
                         >
                           +
                         </button>
                       </div>
-                      <span className="text-gray-900 font-semibold min-w-[80px] text-right">
+                      <span className="text-gray-900 font-semibold min-w-[70px] md:min-w-[80px] text-right text-sm md:text-base">
                         ${(item.quantity * item.pricePerCase).toFixed(2)}
                       </span>
                       <button
@@ -474,25 +476,25 @@ const ProductCatalog = ({ onNavigateToInvoices }) => {
       )}
 
       {/* Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-8">
         {filteredProducts.length === 0 ? (
-          <div className="text-center py-20">
-            <Package className="w-20 h-20 text-gray-300 mx-auto mb-6" />
-            <h3 className="text-2xl font-semibold text-gray-800 mb-2">No beers found</h3>
-            <p className="text-gray-500 mb-6 max-w-md mx-auto">
+          <div className="text-center py-12 md:py-20">
+            <Package className="w-16 h-16 md:w-20 md:h-20 text-gray-300 mx-auto mb-6" />
+            <h3 className="text-xl md:text-2xl font-semibold text-gray-800 mb-2">No beers found</h3>
+            <p className="text-gray-500 mb-6 max-w-md mx-auto text-sm md:text-base">
               Try adjusting your search or filters to find the perfect beer.
             </p>
           </div>
         ) : (
           <div className="space-y-8">
             {/* ChromaGrid Section */}
-            <div className="bg-white rounded-lg border border-gray-200 p-8">
+            <div className="bg-white rounded-lg border border-gray-200 p-4 md:p-8">
               <div className="w-full max-w-7xl mx-auto">
-                <div className="h-[700px] relative overflow-hidden">
+                <div className="h-[400px] sm:h-[500px] md:h-[600px] lg:h-[700px] relative overflow-hidden">
                   <ChromaGrid 
                     items={transformProductsForChromaGrid(filteredProducts)}
                     className="w-full h-full flex justify-center items-center"
-                    radius={300}
+                    radius={200}
                     damping={0.2}
                     fadeOut={0.3}
                   />
@@ -501,7 +503,7 @@ const ProductCatalog = ({ onNavigateToInvoices }) => {
             </div>
 
             {/* Product Action Buttons */}
-            <div className="flex flex-wrap justify-center gap-4 pt-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4 pt-4">
               {filteredProducts.map((product) => {
                 const isSelected = selectedItems.find(item => item.id === product.id);
                 return (
@@ -509,7 +511,7 @@ const ProductCatalog = ({ onNavigateToInvoices }) => {
                     key={product.id}
                     onClick={() => addItem(product)}
                     disabled={!product.available}
-                    className={`flex items-center space-x-2 px-6 py-3 rounded-lg font-medium transition-all duration-200 border shadow-sm hover:shadow-md ${
+                    className={`flex items-center justify-center space-x-2 px-4 py-3 md:px-6 rounded-lg font-medium transition-all duration-200 border shadow-sm hover:shadow-md text-sm md:text-base min-h-[48px] ${
                       product.available
                         ? isSelected 
                           ? 'bg-rose-500 hover:bg-rose-600 text-white border-rose-500'
@@ -518,11 +520,11 @@ const ProductCatalog = ({ onNavigateToInvoices }) => {
                     }`}
                   >
                     {isSelected ? (
-                      <Check className="w-4 h-4" />
+                      <Check className="w-4 h-4 flex-shrink-0" />
                     ) : (
-                      <Plus className="w-4 h-4" />
+                      <Plus className="w-4 h-4 flex-shrink-0" />
                     )}
-                    <span>
+                    <span className="truncate">
                       {isSelected 
                         ? `Added (${isSelected.quantity})` 
                         : `Add ${product.name}`
@@ -533,8 +535,8 @@ const ProductCatalog = ({ onNavigateToInvoices }) => {
               })}
             </div>
             
-            <div className="text-center py-6">
-              <p className="text-gray-600 text-lg font-medium">
+            <div className="text-center py-4 md:py-6">
+              <p className="text-gray-600 text-base md:text-lg font-medium">
                 Showing all {filteredProducts.length} premium beers
               </p>
             </div>
