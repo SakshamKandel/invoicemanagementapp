@@ -517,7 +517,7 @@ const CustomerManagement = () => {
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="bg-white rounded-xl sm:rounded-3xl shadow-2xl max-w-4xl w-full h-[95vh] sm:max-h-[90vh] overflow-hidden mx-2 sm:mx-0 flex flex-col"
+            className="bg-white rounded-xl sm:rounded-3xl shadow-2xl max-w-4xl w-full h-[92vh] sm:max-h-[90vh] overflow-hidden mx-2 sm:mx-0 flex flex-col"
           >
             {/* Modal Header */}
             <div className="bg-red-500 px-4 sm:px-8 py-4 sm:py-6 text-white flex-shrink-0">
@@ -540,7 +540,7 @@ const CustomerManagement = () => {
             </div>
             
             {/* Modal Content */}
-            <div className="flex-1 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 160px)' }}>
+            <div className="flex-1 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 220px)' }}>
               {error && (
                 <div className="mx-4 sm:mx-8 mt-4 sm:mt-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl">
                   <div className="flex items-center">
