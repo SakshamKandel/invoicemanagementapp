@@ -363,19 +363,19 @@ const CustomerManagement = () => {
                   </div>
                 </div>
               </div>
-              <div className="mt-6 md:mt-0 flex flex-col sm:flex-row gap-3">
+              <div className="mt-6 md:mt-0 flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
                 <button
                   onClick={exportCustomers}
-                  className="flex items-center justify-center space-x-2 px-6 py-3 bg-white border-2 border-gray-300 text-gray-700 rounded-xl hover:border-red-300 hover:bg-red-50 transition-all duration-200 font-medium"
+                  className="flex items-center justify-center space-x-2 px-4 sm:px-6 py-3 bg-white border-2 border-gray-300 text-gray-700 rounded-xl hover:border-red-300 hover:bg-red-50 transition-all duration-200 font-medium text-sm sm:text-base"
                 >
-                  <Download className="w-5 h-5" />
+                  <Download className="w-4 h-4 sm:w-5 sm:h-5" />
                   <span>Export Data</span>
                 </button>
                 <button
                   onClick={() => handleOpenModal()}
-                  className="flex items-center justify-center space-x-2 px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl transition-all duration-200 font-medium shadow-lg hover:shadow-xl"
+                  className="flex items-center justify-center space-x-2 px-4 sm:px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl transition-all duration-200 font-medium shadow-lg hover:shadow-xl text-sm sm:text-base"
                 >
-                  <Plus className="w-5 h-5" />
+                  <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
                   <span>Add Customer</span>
                 </button>
               </div>
@@ -468,9 +468,9 @@ const CustomerManagement = () => {
             </p>
             <button
               onClick={() => handleOpenModal()}
-              className="inline-flex items-center space-x-2 px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl transition-all duration-200 font-medium shadow-lg hover:shadow-xl"
+              className="inline-flex items-center justify-center space-x-2 px-4 sm:px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl transition-all duration-200 font-medium shadow-lg hover:shadow-xl text-sm sm:text-base w-full sm:w-auto max-w-sm mx-auto"
             >
-              <Plus className="w-5 h-5" />
+              <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
               <span>Add Your First Customer</span>
             </button>
           </div>
@@ -512,52 +512,52 @@ const CustomerManagement = () => {
 
       {/* Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4">
           <motion.div
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="bg-white rounded-3xl shadow-2xl max-w-4xl w-full max-h-[95vh] overflow-hidden"
+            className="bg-white rounded-xl sm:rounded-3xl shadow-2xl max-w-4xl w-full max-h-[98vh] sm:max-h-[95vh] overflow-hidden mx-2 sm:mx-0 flex flex-col"
           >
             {/* Modal Header */}
-            <div className="bg-red-500 px-8 py-6 text-white">
+            <div className="bg-red-500 px-4 sm:px-8 py-4 sm:py-6 text-white flex-shrink-0">
               <div className="flex justify-between items-center">
-                <div>
-                  <h2 className="text-2xl font-bold">
+                <div className="min-w-0 flex-1 pr-4">
+                  <h2 className="text-lg sm:text-2xl font-bold truncate">
                     {selectedCustomer ? 'Edit Customer Details' : 'Add New Customer'}
                   </h2>
-                  <p className="text-red-100 mt-1">
+                  <p className="text-red-100 mt-1 text-sm sm:text-base hidden sm:block">
                     {selectedCustomer ? 'Update customer information and business details' : 'Enter customer information to get started'}
                   </p>
                 </div>
                 <button
                   onClick={handleCloseModal}
-                  className="p-2 hover:bg-white/20 rounded-full transition-colors"
+                  className="p-2 hover:bg-white/20 rounded-full transition-colors flex-shrink-0"
                 >
-                  <X className="w-6 h-6 text-white" />
+                  <X className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                 </button>
               </div>
             </div>
             
             {/* Modal Content */}
-            <div className="max-h-[70vh] overflow-y-auto">
+            <div className="flex-1 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 200px)' }}>
               {error && (
-                <div className="mx-8 mt-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl">
+                <div className="mx-4 sm:mx-8 mt-4 sm:mt-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl">
                   <div className="flex items-center">
                     <AlertCircle className="w-5 h-5 mr-2" />
-                    {error}
+                    <span className="text-sm sm:text-base">{error}</span>
                   </div>
                 </div>
               )}
               
-              <form onSubmit={handleSubmit} className="p-8 space-y-8">
+              <form onSubmit={handleSubmit} className="p-4 sm:p-8 space-y-6 sm:space-y-8">
                 {/* Basic Information */}
                 <div className="space-y-6">
                   <div className="border-l-4 border-red-500 pl-4">
                     <h3 className="text-lg font-semibold text-gray-900">Basic Information</h3>
                     <p className="text-sm text-gray-600 mt-1">Essential details about the customer and business</p>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                     <div className="space-y-2">
                       <label className="text-sm font-semibold text-gray-700 flex items-center">
                         Business Name
@@ -644,7 +644,7 @@ const CustomerManagement = () => {
                         placeholder="Suite 100, Building A"
                       />
                     </div>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                       <div className="space-y-2">
                         <label className="text-sm font-semibold text-gray-700">City</label>
                         <input
@@ -695,7 +695,7 @@ const CustomerManagement = () => {
                     <h3 className="text-lg font-semibold text-gray-900">Business Details</h3>
                     <p className="text-sm text-gray-600 mt-1">Business classification and financial terms</p>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                     <div className="space-y-2">
                       <label className="text-sm font-semibold text-gray-700">Business Type</label>
                       <select
@@ -770,7 +770,7 @@ const CustomerManagement = () => {
             </div>
             
             {/* Modal Footer */}
-            <div className="bg-gray-50 px-8 py-6 flex flex-col sm:flex-row justify-end space-y-3 sm:space-y-0 sm:space-x-4 border-t border-gray-200">
+            <div className="bg-gray-50 px-4 sm:px-8 py-4 sm:py-6 flex flex-col sm:flex-row justify-end space-y-3 sm:space-y-0 sm:space-x-4 border-t border-gray-200 flex-shrink-0">
               <button
                 type="button"
                 onClick={handleCloseModal}
