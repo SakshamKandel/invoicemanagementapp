@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import path from 'path'
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -12,6 +13,7 @@ export default defineConfig({
   define: {
     global: 'globalThis',
     'process.env': '{}',
+    'process.version': JSON.stringify('v16.0.0'),
   },
   resolve: {
     alias: {
@@ -29,6 +31,9 @@ export default defineConfig({
   build: {
     assetsDir: 'assets',
     outDir: 'dist',
+    commonjsOptions: {
+      transformMixedEsModules: true,
+    },
     rollupOptions: {
       output: {
         assetFileNames: (assetInfo) => {

@@ -17,7 +17,8 @@
       "Bash(node:*)",
       "Bash(cat:*)",
       "Bash(pkill:*)",
-      "Bash(true)"
+      "Bash(true)",
+      "Bash(firebase deploy:*)"
     ],
     "deny": []
   }

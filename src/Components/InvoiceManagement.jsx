@@ -24,6 +24,12 @@ import {
 } from 'react-aria-components';
 import { collection, getDocs, updateDoc, deleteDoc, doc, query, orderBy, where } from 'firebase/firestore';
 import { db } from '../firebase';
+import { 
+  saveInvoiceOptimized, 
+  loadInvoicesOptimized, 
+  batchUpdateInvoiceStatus,
+  subscribeToCollectionOptimized 
+} from '../services/optimizedFirebaseService';
 import CreateInvoice from './CreateInvoice';
 import InvoicePDF from './InvoicePDF';
 import InvoicePDFService from '../services/InvoicePDFService';
@@ -36,12 +42,14 @@ const InvoiceManagement = () => {
   const [customers, setCustomers] = useState([]);
   const [products, setProducts] = useState(fixedProducts);
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
   const [dateFilter, setDateFilter] = useState('all');
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [hasMore, setHasMore] = useState(true);
+  const [lastDoc, setLastDoc] = useState(null);
+  const [totalInvoices, setTotalInvoices] = useState(0);
   
   const { 
     selectedItems, 
@@ -53,13 +61,6 @@ const InvoiceManagement = () => {
     getTotalItems
   } = useInvoice();
 
-  const statusOptions = [
-    { id: 'all', label: 'All Statuses' },
-    { id: 'draft', label: 'Draft', color: 'gray' },
-    { id: 'sent', label: 'Sent', color: 'blue' },
-    { id: 'paid', label: 'Paid', color: 'green' },
-    { id: 'cancelled', label: 'Cancelled', color: 'orange' }
-  ];
 
   const dateFilterOptions = [
     { id: 'all', label: 'All Time' },
@@ -75,19 +76,89 @@ const InvoiceManagement = () => {
 
   useEffect(() => {
     filterInvoices();
-  }, [invoices, searchQuery, statusFilter, dateFilter]);
+  }, [invoices, searchQuery, dateFilter]);
 
-  const fetchData = async () => {
+  // Add effect to handle search/filter changes with fresh data
+  useEffect(() => {
+    const handleFilterChange = async () => {
+      // Clear cache when filters change to ensure fresh data
+      try {
+        const { clearAllCaches } = await import('../services/optimizedFirebaseService');
+        clearAllCaches();
+      } catch (error) {
+        console.warn('Could not clear cache:', error);
+      }
+      
+      // Debounce the fetch to avoid too many requests
+      const timeoutId = setTimeout(() => {
+        fetchData();
+      }, 300);
+
+      return () => clearTimeout(timeoutId);
+    };
+
+    // Only fetch fresh data if there are active filters/search
+    if (searchQuery || dateFilter !== 'all') {
+      const cleanup = handleFilterChange();
+      return cleanup;
+    }
+  }, [searchQuery, dateFilter]);
+
+  const fetchData = async (loadMore = false) => {
     setLoading(true);
     try {
-      const [invoicesRes, customersRes, productsRes] = await Promise.all([
-        getDocs(query(collection(db, 'invoices'), orderBy('createdAt', 'desc'))),
-        getDocs(query(collection(db, 'customers'), orderBy('businessName'))),
-        getDocs(query(collection(db, 'products'), orderBy('name')))
-      ]);
-      setInvoices(invoicesRes.docs.map(d => ({ id: d.id, ...d.data() })));
-      setCustomers(customersRes.docs.map(d => ({ id: d.id, ...d.data() })));
-      setProducts(productsRes.docs.map(d => ({ id: d.id, ...d.data() })));
+      // Get current date for filtering
+      const currentYear = new Date().getFullYear();
+      const currentMonth = new Date().getMonth();
+      
+      // Build filters based on current state
+      const filters = {
+        year: dateFilter === 'year' ? currentYear : undefined,
+        month: dateFilter === 'month' ? currentMonth : undefined,
+        searchTerm: searchQuery
+      };
+
+      // Try optimized loading first
+      try {
+        const result = await loadInvoicesOptimized(filters, 15, loadMore ? lastDoc : null);
+        
+        if (loadMore) {
+          setInvoices(prev => [...prev, ...result.invoices]);
+        } else {
+          setInvoices(result.invoices);
+          setLastDoc(null);
+        }
+        
+        setHasMore(result.hasMore);
+        setLastDoc(result.lastDoc);
+        setTotalInvoices(prev => loadMore ? prev + result.invoices.length : result.invoices.length);
+        
+      } catch (optimizedError) {
+        console.warn('Optimized loading failed, using fallback:', optimizedError);
+        
+        // Fallback to original method
+        const [invoicesRes, customersRes, productsRes] = await Promise.all([
+          getDocs(query(collection(db, 'invoices'), orderBy('createdAt', 'desc'))),
+          getDocs(query(collection(db, 'customers'), orderBy('businessName'))),
+          getDocs(query(collection(db, 'products'), orderBy('name')))
+        ]);
+        
+        setInvoices(invoicesRes.docs.map(d => ({ id: d.id, ...d.data() })));
+        setCustomers(customersRes.docs.map(d => ({ id: d.id, ...d.data() })));
+        setProducts(productsRes.docs.map(d => ({ id: d.id, ...d.data() })));
+        setTotalInvoices(invoicesRes.docs.length);
+      }
+      
+      // Load customers and products separately (cached)
+      if (!loadMore) {
+        const [customersRes, productsRes] = await Promise.all([
+          getDocs(query(collection(db, 'customers'), orderBy('businessName'))),
+          getDocs(query(collection(db, 'products'), orderBy('name')))
+        ]);
+        setCustomers(customersRes.docs.map(d => ({ id: d.id, ...d.data() })));
+        setProducts(productsRes.docs.map(d => ({ id: d.id, ...d.data() })));
+      }
+      
     } catch (err) {
       console.error('Error fetching data:', err);
       setError('Failed to load data. Please try again.');
@@ -104,9 +175,6 @@ const InvoiceManagement = () => {
         inv.customerName?.toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
-    if (statusFilter !== 'all') {
-      filtered = filtered.filter(inv => inv.status === statusFilter);
-    }
     // Date filtering logic remains the same
     setFilteredInvoices(filtered);
   };
@@ -114,9 +182,34 @@ const InvoiceManagement = () => {
   const updateInvoiceStatus = async (invoiceId, newStatus) => {
     try {
       await updateDoc(doc(db, 'invoices', invoiceId), { status: newStatus, updatedAt: new Date() });
-      fetchData();
+      
+      // Clear cache to ensure fresh data
+      const { clearAllCaches } = await import('../services/optimizedFirebaseService');
+      clearAllCaches();
+      
+      // Immediately update UI
+      setInvoices(prev => prev.map(invoice => 
+        invoice.id === invoiceId 
+          ? { ...invoice, status: newStatus, updatedAt: new Date() }
+          : invoice
+      ));
+      
+      // Update filtered list as well
+      setFilteredInvoices(prev => prev.map(invoice => 
+        invoice.id === invoiceId 
+          ? { ...invoice, status: newStatus, updatedAt: new Date() }
+          : invoice
+      ));
+      
+      // Fetch fresh data in background
+      setTimeout(() => fetchData(), 100);
+      
     } catch (err) {
+      console.error('Error updating invoice status:', err);
       setError('Failed to update invoice status.');
+      
+      // Refresh data on error to ensure consistency
+      fetchData();
     }
   };
 
@@ -124,16 +217,31 @@ const InvoiceManagement = () => {
     if (window.confirm('Are you sure you want to delete this invoice?')) {
       try {
         await deleteDoc(doc(db, 'invoices', invoiceId));
-        fetchData();
+        
+        // Clear cache to ensure fresh data
+        const { clearAllCaches } = await import('../services/optimizedFirebaseService');
+        clearAllCaches();
+        
+        // Immediately update UI by removing from local state
+        setInvoices(prev => prev.filter(invoice => invoice.id !== invoiceId));
+        setFilteredInvoices(prev => prev.filter(invoice => invoice.id !== invoiceId));
+        
+        // Fetch fresh data in background
+        setTimeout(() => fetchData(), 100);
+        
       } catch (err) {
+        console.error('Error deleting invoice:', err);
         setError('Failed to delete invoice.');
+        
+        // Refresh data on error to ensure consistency
+        fetchData();
       }
     }
   };
 
   const formatDate = (date) => {
     if (!date) return '-';
-    const d = date.toDate ? date.toDate() : new Date(date);
+    const d = typeof date === 'string' ? new Date(date) : (date.toDate ? date.toDate() : new Date(date));
     return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
 
@@ -142,11 +250,9 @@ const InvoiceManagement = () => {
   const getStatusPill = (status) => {
     const statusMap = {
       paid: { icon: CheckCircle, color: 'green', label: 'Paid' },
-      sent: { icon: Send, color: 'blue', label: 'Sent' },
-      draft: { icon: Clock, color: 'gray', label: 'Draft' },
-      cancelled: { icon: XCircle, color: 'orange', label: 'Cancelled' },
+      completed: { icon: CheckCircle, color: 'green', label: 'Completed' },
     };
-    const { icon: Icon, color, label } = statusMap[status] || { icon: FileText, color: 'gray', label: 'Unknown' };
+    const { icon: Icon, color, label } = statusMap[status] || { icon: CheckCircle, color: 'green', label: 'Paid' };
     return (
       <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-${color}-100 text-${color}-800`}>
         <Icon className={`w-4 h-4 mr-1.5 text-${color}-500`} />
@@ -175,42 +281,50 @@ const InvoiceManagement = () => {
   };
 
   // Function to automatically download PDF after invoice creation
-  const handleInvoiceCreated = async () => {
+  const handleInvoiceCreated = async (newInvoice) => {
     try {
       closeCreateInvoice();
       clearItems();
       
-      // Refresh data to get the latest invoice
-      await fetchData();
+      // Clear cache to ensure fresh data
+      const { clearAllCaches } = await import('../services/optimizedFirebaseService');
+      clearAllCaches();
       
-      // Small delay to ensure the UI updates and we get the latest invoices
+      // If we receive the new invoice directly, add it immediately to the UI
+      if (newInvoice) {
+        console.log('🚀 New invoice received, updating UI immediately:', newInvoice.invoiceNumber);
+        
+        // Immediately update the local state with the new invoice
+        setInvoices(prev => [newInvoice, ...prev]);
+        setFilteredInvoices(prev => [newInvoice, ...prev]);
+        
+        // Auto-generate PDF for the new invoice
+        try {
+          console.log('🚀 Auto-generating PDF for invoice:', newInvoice.invoiceNumber);
+          await generatePDF(newInvoice);
+          console.log('✅ PDF auto-downloaded successfully');
+        } catch (pdfError) {
+          console.error('❌ Auto PDF generation failed:', pdfError);
+        }
+      }
+      
+      // Refresh data in background to ensure consistency
       setTimeout(async () => {
         try {
-          // Get the most recently created invoice (first in the sorted list)
-          const updatedInvoicesRes = await getDocs(query(collection(db, 'invoices'), orderBy('createdAt', 'desc')));
-          const updatedInvoices = updatedInvoicesRes.docs.map(d => ({ id: d.id, ...d.data() }));
-          
-          const latestInvoice = updatedInvoices[0];
-          
-          if (latestInvoice) {
-            console.log('🚀 Auto-generating PDF for invoice:', latestInvoice.invoiceNumber);
-            await generatePDF(latestInvoice);
-            console.log('✅ PDF auto-downloaded successfully');
-          } else {
-            console.warn('⚠️ No latest invoice found for auto PDF generation');
-          }
+          await fetchData();
         } catch (error) {
-          console.error('❌ Auto PDF generation failed:', error);
-          // Don't show error to user as invoice was still created successfully
+          console.error('Background refresh failed:', error);
         }
-      }, 1000); // 1 second delay
+      }, 200);
       
     } catch (error) {
       console.error('Error in handleInvoiceCreated:', error);
-      // Still close and refresh even if PDF generation fails
+      // Still close and refresh even if something fails
       closeCreateInvoice();
       clearItems();
-      fetchData();
+      
+      // Force refresh data
+      setTimeout(() => fetchData(), 100);
     }
   };
 
@@ -249,17 +363,33 @@ const InvoiceManagement = () => {
           )}
         </div>
       </div>
-      <div className="flex justify-end space-x-2 mt-6">
-        <button onClick={() => { setSelectedInvoice(invoice); setIsPreviewModalOpen(true); }} className="p-2 text-gray-500 hover:text-red-500 hover:bg-gray-100 rounded-full transition-colors" title="Preview Invoice">
-          <Eye className="w-4 h-4" />
-        </button>
-        <button onClick={() => generatePDF(invoice)} className="p-2 text-gray-500 hover:text-red-500 hover:bg-gray-100 rounded-full transition-colors" title="Download PDF">
-          <Download className="w-4 h-4" />
-        </button>
-        {invoice.pdfUrl && <a href={invoice.pdfUrl} target="_blank" rel="noopener noreferrer" className="p-2 text-gray-500 hover:text-red-500 hover:bg-gray-100 rounded-full transition-colors" title="Download Stored PDF"><FileText className="w-4 h-4" /></a>}
-        <button onClick={() => deleteInvoice(invoice.id)} className="p-2 text-gray-500 hover:text-red-500 hover:bg-gray-100 rounded-full transition-colors">
-          <Trash2 className="w-4 h-4" />
-        </button>
+      <div className="space-y-3 mt-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            {getStatusPill(invoice.status)}
+          </div>
+          {invoice.status === 'paid' && (
+            <button 
+              onClick={() => updateInvoiceStatus(invoice.id, 'completed')} 
+              className="px-3 py-1 bg-emerald-100 text-emerald-800 rounded-full text-xs font-medium hover:bg-emerald-200 transition-colors"
+              title="Mark as Completed"
+            >
+              Complete
+            </button>
+          )}
+        </div>
+        <div className="flex justify-end space-x-2">
+          <button onClick={() => { setSelectedInvoice(invoice); setIsPreviewModalOpen(true); }} className="p-2 text-gray-500 hover:text-red-500 hover:bg-gray-100 rounded-full transition-colors" title="Preview Invoice">
+            <Eye className="w-4 h-4" />
+          </button>
+          <button onClick={() => generatePDF(invoice)} className="p-2 text-gray-500 hover:text-red-500 hover:bg-gray-100 rounded-full transition-colors" title="Download PDF">
+            <Download className="w-4 h-4" />
+          </button>
+          {invoice.pdfUrl && <a href={invoice.pdfUrl} target="_blank" rel="noopener noreferrer" className="p-2 text-gray-500 hover:text-red-500 hover:bg-gray-100 rounded-full transition-colors" title="Download Stored PDF"><FileText className="w-4 h-4" /></a>}
+          <button onClick={() => deleteInvoice(invoice.id)} className="p-2 text-gray-500 hover:text-red-500 hover:bg-gray-100 rounded-full transition-colors">
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </div>
       </div>
     </motion.div>
   );
@@ -284,10 +414,38 @@ const InvoiceManagement = () => {
             </div>
           )}
         </div>
-        <button onClick={() => { clearItems(); openCreateInvoice(); }} className="mt-4 md:mt-0 flex items-center space-x-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors">
-          <Plus className="w-4 h-4" />
-          <span>New Invoice</span>
-        </button>
+        <div className="mt-4 md:mt-0 flex items-center space-x-2">
+          <button 
+            onClick={() => {
+              // Clear cache and refresh data
+              const refreshData = async () => {
+                try {
+                  const { clearAllCaches } = await import('../services/optimizedFirebaseService');
+                  clearAllCaches();
+                  await fetchData();
+                } catch (error) {
+                  console.error('Error refreshing data:', error);
+                  fetchData(); // Fallback
+                }
+              };
+              refreshData();
+            }}
+            className="flex items-center space-x-2 px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors"
+            title="Refresh Invoice List"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            <span className="hidden sm:inline">Refresh</span>
+          </button>
+          <button 
+            onClick={() => { clearItems(); openCreateInvoice(); }} 
+            className="flex items-center space-x-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            <span>New Invoice</span>
+          </button>
+        </div>
       </div>
 
       <div className="bg-white rounded-xl border border-gray-200 p-4">
@@ -306,9 +464,6 @@ const InvoiceManagement = () => {
           </div>
           <div className="flex items-center space-x-3">
             <Filter className="w-5 h-5 text-gray-400" />
-            <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500">
-              {statusOptions.map(opt => <option key={opt.id} value={opt.id}>{opt.label}</option>)}
-            </select>
             <select value={dateFilter} onChange={e => setDateFilter(e.target.value)} className="px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500">
               {dateFilterOptions.map(opt => <option key={opt.id} value={opt.id}>{opt.label}</option>)}
             </select>

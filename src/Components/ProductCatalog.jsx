@@ -17,7 +17,9 @@ import { useInvoice } from '../contexts/InvoiceContext';
 import { 
   saveProductsToFirebase, 
   loadProductsFromFirebase, 
-  updateProductStockInFirebase,
+  updateProductStockInFirebase
+} from '../services/optimizedFirebaseService';
+import { 
   clearAllProductsFromFirebase,
   debugFirebaseProducts 
 } from '../services/firebaseService';

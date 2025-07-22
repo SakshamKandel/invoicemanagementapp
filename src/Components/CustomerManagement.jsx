@@ -22,6 +22,11 @@ import {
 } from 'lucide-react';
 import { collection, addDoc, getDocs, updateDoc, deleteDoc, doc, query, orderBy } from 'firebase/firestore';
 import { db } from '../firebase';
+import { 
+  saveCustomerOptimized, 
+  loadCustomersPaginated,
+  clearAllCaches 
+} from '../services/optimizedFirebaseService';
 import { useAuth } from '../contexts/AuthContext';
 
 const CustomerManagement = () => {
@@ -34,6 +39,8 @@ const CustomerManagement = () => {
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [hasMore, setHasMore] = useState(true);
+  const [lastDoc, setLastDoc] = useState(null);
 
   const [formData, setFormData] = useState({
     businessName: '',
@@ -71,16 +78,36 @@ const CustomerManagement = () => {
     filterCustomers();
   }, [customers, searchQuery, selectedFilter]);
 
-  const fetchCustomers = async () => {
+  const fetchCustomers = async (loadMore = false) => {
     try {
       setLoading(true);
-      const q = query(collection(db, 'customers'), orderBy('createdAt', 'desc'));
-      const querySnapshot = await getDocs(q);
-      const customerList = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setCustomers(customerList);
+      
+      // Use optimized paginated loading for better performance
+      const result = await loadCustomersPaginated(20, loadMore ? lastDoc : null);
+      
+      if (loadMore) {
+        setCustomers(prev => [...prev, ...result.customers]);
+      } else {
+        setCustomers(result.customers);
+        setLastDoc(null);
+      }
+      
+      setHasMore(result.hasMore);
+      setLastDoc(result.lastDoc);
+      
     } catch (error) {
       console.error('Error fetching customers:', error);
       setError('Failed to fetch customers');
+      
+      // Fallback to original method if optimized fails
+      try {
+        const q = query(collection(db, 'customers'), orderBy('createdAt', 'desc'));
+        const querySnapshot = await getDocs(q);
+        const customerList = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setCustomers(customerList);
+      } catch (fallbackError) {
+        console.error('Fallback also failed:', fallbackError);
+      }
     } finally {
       setLoading(false);
     }
@@ -154,18 +181,29 @@ const CustomerManagement = () => {
     try {
       const customerData = {
         ...formData,
-        updatedAt: new Date()
+        createdBy: currentUser?.uid || 'unknown'
       };
 
-      if (selectedCustomer) {
-        await updateDoc(doc(db, 'customers', selectedCustomer.id), customerData);
-      } else {
-        await addDoc(collection(db, 'customers'), {
-          ...customerData,
-          createdBy: currentUser.uid,
-          createdAt: new Date()
-        });
+      // Try optimized save first
+      try {
+        await saveCustomerOptimized(customerData, selectedCustomer?.id);
+      } catch (optimizedError) {
+        console.warn('Optimized save failed, using fallback:', optimizedError);
+        
+        // Fallback to original method
+        if (selectedCustomer) {
+          await updateDoc(doc(db, 'customers', selectedCustomer.id), {
+            ...customerData,
+            updatedAt: new Date()
+          });
+        } else {
+          await addDoc(collection(db, 'customers'), {
+            ...customerData,
+            createdAt: new Date()
+          });
+        }
       }
+      
       await fetchCustomers();
       handleCloseModal();
     } catch (error) {
@@ -506,6 +544,19 @@ const CustomerManagement = () => {
                 ))}
               </AnimatePresence>
             </div>
+            
+            {/* Load More Button */}
+            {hasMore && filteredCustomers.length >= 20 && (
+              <div className="mt-8 text-center">
+                <button
+                  onClick={() => fetchCustomers(true)}
+                  disabled={loading}
+                  className="px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl"
+                >
+                  {loading ? 'Loading...' : 'Load More Customers'}
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>

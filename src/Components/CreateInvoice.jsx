@@ -5,7 +5,8 @@ import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { useInvoice } from '../contexts/InvoiceContext';
 import { products as catalogProducts } from '../data/products';
-import { loadProductsFromFirebase } from '../services/firebaseService';
+import { loadProductsFromFirebase } from '../services/optimizedFirebaseService';
+import { saveInvoiceOptimized } from '../services/optimizedFirebaseService';
 
 const CreateInvoice = ({ customers = [], onClose, onInvoiceCreated }) => {
   const { currentUser } = useAuth();
@@ -279,8 +280,24 @@ const CreateInvoice = ({ customers = [], onClose, onInvoiceCreated }) => {
         updatedAt: serverTimestamp()
       };
 
-      await addDoc(collection(db, 'invoices'), invoiceData);
-      onInvoiceCreated();
+      // Try optimized save first, with fallback
+      let savedInvoiceRef;
+      try {
+        savedInvoiceRef = await saveInvoiceOptimized(invoiceData);
+      } catch (optimizedError) {
+        console.warn('Optimized save failed, using fallback:', optimizedError);
+        savedInvoiceRef = await addDoc(collection(db, 'invoices'), invoiceData);
+      }
+      
+      // Create the new invoice object with the ID
+      const newInvoice = {
+        id: savedInvoiceRef.id,
+        ...invoiceData,
+        createdAt: new Date(), // Use current date since serverTimestamp() hasn't resolved yet
+        updatedAt: new Date()
+      };
+      
+      onInvoiceCreated(newInvoice);
     } catch (error) {
       console.error('Error saving invoice:', error);
       setError('Failed to save invoice. Please try again.');
@@ -731,20 +748,12 @@ const CreateInvoice = ({ customers = [], onClose, onInvoiceCreated }) => {
               Cancel
             </button>
             <button
-              onClick={() => handleSaveInvoice('draft')}
+              onClick={() => handleSaveInvoice('paid')}
               disabled={loading || items.length === 0}
-              className="w-full sm:w-auto px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+              className="w-full sm:w-auto px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
             >
               <Save className="w-4 h-4 mr-2" />
-              Save Draft
-            </button>
-            <button
-              onClick={() => handleSaveInvoice('sent')}
-              disabled={loading || items.length === 0}
-              className="w-full sm:w-auto px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-            >
-              <Send className="w-4 h-4 mr-2" />
-              Save & Send
+              Create Paid Invoice
             </button>
           </div>
         </div>

@@ -35,6 +35,11 @@ export class InvoicePDFService {
             });
             console.log('PNG logo loaded successfully');
           } else {
+            throw new Error('PNG not found');
+          }
+        } catch (error) {
+          console.log('PNG logo failed, trying SVG fallback:', error);
+          try {
             // Fallback to SVG if PNG not found
             const svgResponse = await fetch('/peak-brew.svg');
             if (svgResponse.ok) {
@@ -42,9 +47,9 @@ export class InvoicePDFService {
               logoBase64 = `data:image/svg+xml;base64,${btoa(logoSvg)}`;
               console.log('SVG logo loaded as fallback');
             }
+          } catch (svgError) {
+            console.log('Logo loading failed completely:', svgError);
           }
-        } catch (error) {
-          console.log('Logo pre-loading failed:', error);
         }
 
         // Build the PDF
@@ -96,104 +101,124 @@ export class InvoicePDFService {
     const mediumGray = '#6B7280'; // Gray-500
     const lightGray = '#F3F4F6'; // Gray-100
 
-    let currentY = margin + 5;
+    let currentY = margin - 10; // Start higher
 
-    // Header Section - Company Logo and Info
-    // Use the logo that was loaded in generatePDF
+    // Header Section - Clean background without red line initially
+    // Light background for header area only
+    doc.rect(0, 0, pageWidth, 80)
+       .fill('#FAFAFA');
+
+    // Use the high-quality logo that was loaded - compact positioning
     if (logoBase64) {
       try {
-        doc.image(logoBase64, margin, currentY, {
-          width: 80,
-          height: 80
+        // Compact logo positioning
+        doc.image(logoBase64, margin, currentY + 5, {
+          width: 70,
+          height: 70,
+          fit: [70, 70],
+          align: 'center',
+          valign: 'center'
         });
-        console.log('Logo added to PDF successfully');
+        console.log('High-quality logo added to PDF successfully');
       } catch (error) {
         console.error('Error adding logo to PDF:', error);
-        // Show minimal fallback if logo fails
-        doc.rect(margin, currentY, 80, 80)
+        // Enhanced fallback design
+        doc.roundedRect(margin, currentY + 5, 70, 70, 6)
+           .fill('#ffffff')
            .stroke(redColor);
         doc.fill(redColor)
            .fontSize(12)
            .font('Helvetica-Bold')
-           .text('LOGO', margin + 25, currentY + 35);
+           .text('PEAK', margin + 18, currentY + 25)
+           .text('BREW', margin + 18, currentY + 40);
       }
     } else {
-      // No logo available - show minimal placeholder
-      doc.rect(margin, currentY, 80, 80)
+      // Enhanced placeholder design when no logo is available
+      doc.roundedRect(margin, currentY + 5, 70, 70, 6)
+         .fill('#ffffff')
          .stroke(redColor);
       doc.fill(redColor)
          .fontSize(12)
          .font('Helvetica-Bold')
-         .text('LOGO', margin + 25, currentY + 35);
+         .text('PEAK', margin + 18, currentY + 25)
+         .text('BREW', margin + 18, currentY + 40);
     }
 
-    // Company Details (right of logo, showing company name)
-    const companyX = margin + 95;
+    // Enhanced Company Details (right of logo) - compact positioning
+    const companyX = margin + 85;
     
-    // Display company name instead of product names
+    // Compact company branding
     doc.fill(darkGray)
-       .fontSize(18)  // Slightly smaller for better proportion
+       .fontSize(18)  // Smaller for compact design
        .font('Helvetica-Bold')
        .text('PEAK BREW', companyX, currentY + 12, {
-         width: 180,  // Reduced width to prevent overlap
+         width: 160,
          ellipsis: true
        });
 
-    // Display "TRADING" below
+    // Elegant "TRADING" subtitle - moved up
     doc.fill(redColor)
-       .fontSize(12)  // Reduced from 14 to 12
+       .fontSize(11)
        .font('Helvetica-Bold')
        .text('TRADING', companyX, currentY + 32, {
-         width: 180,
+         width: 160,
          ellipsis: true
        });
 
-    // Business type badge with better positioning
-    const badgeY = currentY + 52;
-    doc.rect(companyX, badgeY, 160, 10)  // Slightly smaller badge
+    // Compact business type badge - moved up and smaller
+    const badgeY = currentY + 50;
+    doc.roundedRect(companyX, badgeY, 155, 16, 8)
        .fill(redColor);
 
     doc.fill('#ffffff')
-       .fontSize(7)  // Slightly smaller text
-       .font('Helvetica-Bold')
-       .text('PREMIUM BEER DISTRIBUTION', companyX + 15, badgeY + 3);
-
-    // Invoice title and number (better positioning to avoid overlap)
-    const rightX = pageWidth - margin - 100;  // Moved slightly left
-    doc.fill(redColor)
-       .fontSize(12)  // Further reduced for better proportion
-       .font('Helvetica-Bold')
-       .text('INVOICE', rightX, currentY + 8);
-
-    // Invoice number with smaller font
-    doc.fontSize(7)  // Further reduced
-       .font('Helvetica-Bold')
-       .text(`#${invoice.invoiceNumber || invoice.id}`, rightX, currentY + 22);
-
-    // Issue date (better positioning to prevent overlap)
-    doc.fill(mediumGray)
        .fontSize(7)
+       .font('Helvetica-Bold')
+       .text('PREMIUM BEER DISTRIBUTION', companyX + 12, badgeY + 5);
+
+    // Modern Invoice title and details section (top right) - compact design
+    const rightX = pageWidth - margin - 130;
+    
+    // Compact invoice title with background
+    doc.roundedRect(rightX, currentY + 5, 130, 70, 6)
+       .fill('#ffffff')
+       .stroke('#E5E7EB');
+
+    doc.fill(redColor)
+       .fontSize(16)
+       .font('Helvetica-Bold')
+       .text('INVOICE', rightX + 12, currentY + 15);
+
+    // Compact invoice number
+    doc.fontSize(10)
+       .font('Helvetica-Bold')
+       .text(`#${invoice.invoiceNumber || invoice.id}`, rightX + 12, currentY + 32);
+
+    // Compact date display
+    doc.fill(mediumGray)
+       .fontSize(8)
        .font('Helvetica')
-       .text('Issue Date:', rightX, currentY + 42);
+       .text('Issue Date:', rightX + 12, currentY + 47);
 
     const issueDate = invoice.createdAt?.toDate ? invoice.createdAt.toDate() : new Date(invoice.createdAt || invoice.date || Date.now());
-    doc.font('Helvetica-Bold')
-       .text(formatDate(issueDate), rightX, currentY + 52);
+    doc.fill(darkGray)
+       .font('Helvetica-Bold')
+       .text(formatDate(issueDate), rightX + 12, currentY + 57);
 
-    // Payment method (if available)
+    // Compact payment method display
     if (invoice.paymentMethod) {
       doc.fill(mediumGray)
-         .fontSize(7)
+         .fontSize(8)
          .font('Helvetica')
-         .text('Payment:', rightX, currentY + 65);
+         .text('Payment:', rightX + 70, currentY + 47);
       
-      doc.font('Helvetica-Bold')
-         .text(invoice.paymentMethod.charAt(0).toUpperCase() + invoice.paymentMethod.slice(1), rightX, currentY + 75);
+      doc.fill(darkGray)
+         .font('Helvetica-Bold')
+         .text(invoice.paymentMethod.charAt(0).toUpperCase() + invoice.paymentMethod.slice(1), rightX + 70, currentY + 57);
     }
 
-    currentY += 90; // Increased spacing to prevent overlap with company details
+    currentY += 75; // Move down from header
 
-    // Company contact details (better positioning to avoid overlap)
+    // Company contact details positioned directly below header
     doc.fill(mediumGray)
        .fontSize(8)
        .font('Helvetica');
@@ -203,19 +228,25 @@ export class InvoicePDFService {
       '+1 412-894-6129  |  peakbrewtrading@gmail.com  |  License: #06756556-1'
     ];
 
-    // Position contact details at the left margin to avoid overlap
+    // Position contact details with proper spacing from header
     companyInfo.forEach(info => {
       doc.text(info, margin, currentY);
-      currentY += 10; // Adequate spacing between lines
+      currentY += 12; // Better line spacing
     });
 
-    currentY += 15; // Increased spacing for better separation
+    currentY += 15; // Spacing before red line
 
-    // Professional divider
+    // Professional red accent line positioned BELOW company info
+    doc.rect(0, currentY, pageWidth, 5)
+       .fill(redColor);
+    
+    currentY += 20; // Spacing after red line
+
+    // Light divider for additional separation
     doc.moveTo(margin, currentY)
        .lineTo(pageWidth - margin, currentY)
-       .stroke(mediumGray);
-    currentY += 15; // Reduced spacing
+       .stroke('#E2E8F0');
+    currentY += 25; // Better spacing after divider
 
     // BILL TO Section with enhanced design
     // Bill To background box
@@ -275,14 +306,10 @@ export class InvoicePDFService {
     const tableWidth = pageWidth - 2 * margin + 10;
     const tableStartX = margin - 5;
     
-    // Header background with shadow effect
-    doc.rect(tableStartX, currentY + 2, tableWidth, 30)
-       .fill('#374151')
-       .stroke('#1F2937');
-    
-    doc.rect(tableStartX, currentY, tableWidth, 30)
-       .fill(redColor)
-       .stroke('#B91C1C');
+    // Modern table header with professional styling
+    doc.roundedRect(tableStartX, currentY, tableWidth, 40, 8)
+       .fill('#F8FAFC')
+       .stroke('#E2E8F0');
 
     // Enhanced table headers with better spacing and moved more to the left
     const descWidth = pageWidth - 2 * margin - 120; // Further reduced space to move columns more left
@@ -290,16 +317,16 @@ export class InvoicePDFService {
     const rateX = qtyX + 40; // Tighter spacing between columns
     const amountX = rateX + 50; // Tighter spacing between columns
     
-    doc.fill('#ffffff')
+    doc.fill(darkGray)
        .fontSize(10)
        .font('Helvetica-Bold')
-       .text('PRODUCT DETAILS', margin + 15, currentY + 10) // Left-aligned
-       .text('QTY', qtyX + 25, currentY + 10, { align: 'center', width: 30 }) // Aligned with badge center
-       .text('RATE', rateX + 25, currentY + 10, { align: 'center', width: 40 }) // Aligned with rate center
+       .text('PRODUCT DETAILS', margin + 15, currentY + 12) // Left-aligned
+       .text('QTY', qtyX + 25, currentY + 12, { align: 'center', width: 30 }) // Aligned with badge center
+       .text('RATE', rateX + 25, currentY + 12, { align: 'center', width: 40 }) // Aligned with rate center
        .fontSize(9) // Smaller font for AMOUNT
-       .text('AMOUNT', amountX + 25, currentY + 10, { align: 'center', width: 50 }); // Aligned with amount center
+       .text('AMOUNT', amountX + 25, currentY + 12, { align: 'center', width: 50 }); // Aligned with amount center
 
-    currentY += 30;
+    currentY += 40;
 
     // Table Items with enhanced product details layout
     if (invoice.items && invoice.items.length > 0) {
@@ -475,31 +502,37 @@ export class InvoicePDFService {
       }
     }
 
-    // Footer (force within single page boundaries, moved upward)
-    const maxFooterY = pageHeight - 100; // Moved footer higher up
-    const footerY = Math.min(currentY + 10, maxFooterY); // Reduced spacing before footer
+    // Premium footer design
+    const maxFooterY = pageHeight - 120;
+    const footerY = Math.min(currentY + 20, maxFooterY);
     
-    // Footer divider line
+    // Elegant footer divider
     doc.moveTo(margin, footerY)
        .lineTo(pageWidth - margin, footerY)
-       .stroke('#D1D5DB');
+       .stroke('#E2E8F0');
 
-    // Thank you message
-    doc.fill(darkGray)
-       .fontSize(9)
+    // Professional thank you message with subtle background
+    const thankYouY = footerY + 15;
+    doc.roundedRect(margin + 20, thankYouY - 5, pageWidth - 2 * margin - 40, 25, 5)
+       .fill('#F8FAFC')
+       .stroke('#E2E8F0');
+
+    doc.fill(redColor)
+       .fontSize(11)
        .font('Helvetica-Bold')
-       .text('Thank you for your business!', margin, footerY + 8, { 
+       .text('Thank you for your business!', margin, thankYouY + 3, { 
          width: pageWidth - 2 * margin, 
          align: 'center' 
        });
 
-    // Company contact info (compact single line, moved upward)
-    const footerCompanyText = 'Peak Brew Trading | peakbrewtrading@gmail.com | +1 412-894-6129 | License: #06756556-1';
+    // Enhanced company contact info
+    const footerCompanyText = 'Peak Brew Trading • peakbrewtrading@gmail.com • +1 412-894-6129 • License: #06756556-1';
       
-    doc.fontSize(7)
+    doc.fill(mediumGray)
+       .fontSize(7)
        .font('Helvetica')
        .text(footerCompanyText, 
-             margin, footerY + 18, { // Reduced spacing from 22 to 18
+             margin, footerY + 45, {
          width: pageWidth - 2 * margin, 
          align: 'center' 
        });

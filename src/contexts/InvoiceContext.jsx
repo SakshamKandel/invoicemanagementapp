@@ -3,7 +3,7 @@ import {
   saveCartToFirebase, 
   loadCartFromFirebase, 
   clearCartInFirebase 
-} from '../services/firebaseService';
+} from '../services/optimizedFirebaseService';
 
 const InvoiceContext = createContext();
 

@@ -24,7 +24,6 @@ const Analytics = () => {
     totalCustomers: 0,
     totalProducts: 0,
     paidAmount: 0,
-    pendingAmount: 0,
     revenueGrowth: 0,
     invoiceGrowth: 0
   });
@@ -104,14 +103,9 @@ const Analytics = () => {
       const productsSnapshot = await getDocs(collection(db, 'products'));
       const products = productsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-      // Calculate stats
+      // Calculate stats - All invoices are treated as paid
       const totalRevenue = invoices.reduce((sum, invoice) => sum + (invoice.totalAmount || invoice.total || 0), 0);
-      const paidAmount = invoices
-        .filter(invoice => invoice.status === 'paid')
-        .reduce((sum, invoice) => sum + (invoice.totalAmount || invoice.total || 0), 0);
-      const pendingAmount = invoices
-        .filter(invoice => ['sent', 'draft'].includes(invoice.status))
-        .reduce((sum, invoice) => sum + (invoice.totalAmount || invoice.total || 0), 0);
+      const paidAmount = totalRevenue; // All revenue is paid
 
       // Calculate growth (simplified - comparing with previous period)
       const previousPeriodDate = new Date(filterDate);
@@ -137,7 +131,6 @@ const Analytics = () => {
         totalCustomers: customers.length,
         totalProducts: products.length,
         paidAmount,
-        pendingAmount,
         revenueGrowth,
         invoiceGrowth
       });
@@ -357,33 +350,27 @@ const Analytics = () => {
           className="bg-white rounded-xl shadow-sm border border-gray-200 p-6"
         >
           <h3 className="text-lg font-semibold mb-4 flex items-center">
-            <BarChart3 className="w-5 h-5 mr-2" />
-            Revenue Breakdown
+            <DollarSign className="w-5 h-5 mr-2" />
+            Revenue Summary
           </h3>
           <div className="space-y-4">
             <div>
               <div className="flex justify-between items-center mb-2">
-                <span className="text-sm text-gray-600">Paid</span>
-                <span className="text-sm font-medium text-green-600">{formatCurrency(stats.paidAmount)}</span>
+                <span className="text-sm text-gray-600">Total Paid Revenue</span>
+                <span className="text-sm font-medium text-green-600">{formatCurrency(stats.totalRevenue)}</span>
               </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
+              <div className="w-full bg-gray-200 rounded-full h-3">
                 <div 
-                  className="bg-green-500 h-2 rounded-full" 
-                  style={{ width: `${stats.totalRevenue > 0 ? (stats.paidAmount / stats.totalRevenue) * 100 : 0}%` }}
+                  className="bg-green-500 h-3 rounded-full" 
+                  style={{ width: '100%' }}
                 />
               </div>
+              <p className="text-xs text-gray-500 mt-1">All invoices are paid ({stats.totalInvoices} invoices)</p>
             </div>
-            <div>
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-sm text-gray-600">Pending</span>
-                <span className="text-sm font-medium text-blue-600">{formatCurrency(stats.pendingAmount)}</span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div 
-                  className="bg-blue-500 h-2 rounded-full" 
-                  style={{ width: `${stats.totalRevenue > 0 ? (stats.pendingAmount / stats.totalRevenue) * 100 : 0}%` }}
-                />
-              </div>
+            <div className="pt-4 border-t border-gray-200 text-center">
+              <div className="text-sm text-gray-600">Revenue Status</div>
+              <div className="text-2xl font-bold text-green-600 mt-1">100% Paid</div>
+              <p className="text-xs text-gray-500 mt-1">All {stats.totalInvoices} invoices are fully paid</p>
             </div>
           </div>
         </motion.div>
@@ -452,10 +439,7 @@ const Analytics = () => {
           {recentActivity.length > 0 ? recentActivity.map((activity) => (
             <div key={activity.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
               <div className="flex items-center space-x-3">
-                <div className={`w-2 h-2 rounded-full ${
-                  activity.status === 'paid' ? 'bg-green-500' :
-                  activity.status === 'sent' ? 'bg-blue-500' : 'bg-gray-500'
-                }`} />
+                <div className="w-2 h-2 rounded-full bg-green-500" />
                 <div>
                   <p className="text-sm font-medium text-gray-900">{activity.action}</p>
                   <p className="text-xs text-gray-500">{activity.customer}</p>
