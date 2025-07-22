@@ -90,6 +90,9 @@ const CreateInvoice = ({ customers = [], onClose, onInvoiceCreated }) => {
         productId: item.id,
         name: item.name,
         description: item.name, // Use product name as description
+        size: item.size || '', // Include size information with fallback
+        volume: item.volume || '', // Include volume information with fallback
+        brand: item.brand || '', // Include brand information with fallback
         quantity: item.quantity || 1,
         price: item.pricePerCase,
         total: (item.quantity || 1) * item.pricePerCase
@@ -157,6 +160,8 @@ const CreateInvoice = ({ customers = [], onClose, onInvoiceCreated }) => {
 
     const product = products.find(p => p.id.toString() === selectedProduct.toString());
     console.log('Found product:', product);
+    console.log('Product size:', product?.size);
+    console.log('Product volume:', product?.volume);
     
     if (!product) {
       console.log('Product not found');
@@ -170,12 +175,16 @@ const CreateInvoice = ({ customers = [], onClose, onInvoiceCreated }) => {
       productId: product.id,
       name: product.name,
       description: product.name, // Use product name as description
+      size: product.size || '', // Include size information with fallback
+      volume: product.volume || '', // Include volume information with fallback
+      brand: product.brand || '', // Include brand information with fallback
       quantity: parseInt(quantity),
       price: price,
       total: parseInt(quantity) * price
     };
 
     console.log('New item to add:', newItem);
+    console.log('Item size field:', newItem.size);
     setItems(prevItems => {
       const updatedItems = [...prevItems, newItem];
       console.log('Updated items array:', updatedItems);
@@ -256,16 +265,16 @@ const CreateInvoice = ({ customers = [], onClose, onInvoiceCreated }) => {
         customerPhone: phone.trim(),
         customerAddress: `${address.trim()}${city.trim() ? ', ' + city.trim() : ''}${state.trim() ? ', ' + state.trim() : ''}${zipCode.trim() ? ' ' + zipCode.trim() : ''}`.trim(),
         issueDate,
-        dueDate,
+        dueDate: dueDate || '', // Ensure dueDate is not undefined
         items,
         subtotal,
         taxRate,
         tax: taxAmount,
         total,
         notes: notes.trim(),
-        paymentMethod, // Add payment method to invoice data
+        paymentMethod: paymentMethod || 'cash', // Ensure paymentMethod has a default value
         status,
-        createdBy: currentUser?.uid,
+        createdBy: currentUser?.uid || '',
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp()
       };

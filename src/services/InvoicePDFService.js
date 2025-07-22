@@ -332,20 +332,22 @@ export class InvoicePDFService {
         
         // Prioritize productName field, then name, then description for actual product names
         const productName = item.productName || item.name || item.description || 'Product';
-        doc.text(productName, productStartX, currentY + 6, {
+        const productSize = item.size || item.volume || '';
+        const displayName = productSize ? `${productName} (${productSize})` : productName;
+        
+        doc.text(displayName, productStartX, currentY + 6, {
           width: productWidth,
           ellipsis: true
         });
 
-        // Product details (brand, volume, etc.) - smaller text below name
+        // Product details (volume, SKU, etc.) - smaller text below name
         let detailsY = currentY + 18;
         doc.fill('#6B7280')
            .fontSize(7)
            .font('Helvetica');
         
-        // Create a details line with available information
+        // Create a details line with available information (excluding brand)
         const details = [];
-        if (item.brand) details.push(`Brand: ${item.brand}`);
         if (item.volume) details.push(`Vol: ${item.volume}`);
         if (item.sku) details.push(`SKU: ${item.sku}`);
         
