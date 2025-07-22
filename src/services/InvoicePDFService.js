@@ -180,6 +180,17 @@ export class InvoicePDFService {
     doc.font('Helvetica-Bold')
        .text(formatDate(issueDate), rightX, currentY + 52);
 
+    // Payment method (if available)
+    if (invoice.paymentMethod) {
+      doc.fill(mediumGray)
+         .fontSize(7)
+         .font('Helvetica')
+         .text('Payment:', rightX, currentY + 65);
+      
+      doc.font('Helvetica-Bold')
+         .text(invoice.paymentMethod.charAt(0).toUpperCase() + invoice.paymentMethod.slice(1), rightX, currentY + 75);
+    }
+
     currentY += 90; // Increased spacing to prevent overlap with company details
 
     // Company contact details (better positioning to avoid overlap)

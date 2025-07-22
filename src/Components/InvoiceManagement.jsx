@@ -241,6 +241,12 @@ const InvoiceManagement = () => {
             <span className="text-gray-500">Issue Date:</span>
             <span className="font-medium">{formatDate(invoice.createdAt)}</span>
           </div>
+          {invoice.paymentMethod && (
+            <div className="flex justify-between">
+              <span className="text-gray-500">Payment Method:</span>
+              <span className="font-medium capitalize">{invoice.paymentMethod}</span>
+            </div>
+          )}
         </div>
       </div>
       <div className="flex justify-end space-x-2 mt-6">

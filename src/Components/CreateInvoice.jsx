@@ -32,6 +32,7 @@ const CreateInvoice = ({ customers = [], onClose, onInvoiceCreated }) => {
   const [issueDate, setIssueDate] = useState(new Date().toISOString().split('T')[0]);
   const [dueDate, setDueDate] = useState('');
   const [notes, setNotes] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState('cash'); // Add payment method state
   
   // Items
   const [items, setItems] = useState([]);
@@ -88,7 +89,7 @@ const CreateInvoice = ({ customers = [], onClose, onInvoiceCreated }) => {
         id: Date.now() + Math.random(),
         productId: item.id,
         name: item.name,
-        description: `${item.brand} - ${item.size}`,
+        description: item.name, // Use product name as description
         quantity: item.quantity || 1,
         price: item.pricePerCase,
         total: (item.quantity || 1) * item.pricePerCase
@@ -168,7 +169,7 @@ const CreateInvoice = ({ customers = [], onClose, onInvoiceCreated }) => {
       id: Date.now() + Math.random(),
       productId: product.id,
       name: product.name,
-      description: `${product.brand} - ${product.size}`,
+      description: product.name, // Use product name as description
       quantity: parseInt(quantity),
       price: price,
       total: parseInt(quantity) * price
@@ -262,6 +263,7 @@ const CreateInvoice = ({ customers = [], onClose, onInvoiceCreated }) => {
         tax: taxAmount,
         total,
         notes: notes.trim(),
+        paymentMethod, // Add payment method to invoice data
         status,
         createdBy: currentUser?.uid,
         createdAt: serverTimestamp(),
@@ -499,6 +501,21 @@ const CreateInvoice = ({ customers = [], onClose, onInvoiceCreated }) => {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="Add any notes..."
                 />
+              </div>
+
+              {/* Payment Method */}
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Payment Method
+                </label>
+                <select
+                  value={paymentMethod}
+                  onChange={(e) => setPaymentMethod(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="cash">Cash</option>
+                  <option value="check">Check</option>
+                </select>
               </div>
             </div>
 
