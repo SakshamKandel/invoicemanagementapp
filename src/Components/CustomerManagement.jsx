@@ -345,7 +345,6 @@ const CustomerManagement = () => {
                   Customer Management
                 </h1>
                 <p className="text-lg text-gray-600 mb-4">
-                  Manage your business relationships like Airbnb hosts
                 </p>
                 <div className="flex flex-wrap items-center gap-6 text-sm text-gray-500">
                   <div className="flex items-center">
