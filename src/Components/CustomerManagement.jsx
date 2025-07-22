@@ -512,12 +512,12 @@ const CustomerManagement = () => {
 
       {/* Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4">
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-start sm:items-center justify-center p-2 sm:p-4 pt-4 sm:pt-4">
           <motion.div
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="bg-white rounded-xl sm:rounded-3xl shadow-2xl max-w-4xl w-full max-h-[98vh] sm:max-h-[95vh] overflow-hidden mx-2 sm:mx-0 flex flex-col"
+            className="bg-white rounded-xl sm:rounded-3xl shadow-2xl max-w-4xl w-full h-[95vh] sm:max-h-[90vh] overflow-hidden mx-2 sm:mx-0 flex flex-col"
           >
             {/* Modal Header */}
             <div className="bg-red-500 px-4 sm:px-8 py-4 sm:py-6 text-white flex-shrink-0">
@@ -540,7 +540,7 @@ const CustomerManagement = () => {
             </div>
             
             {/* Modal Content */}
-            <div className="flex-1 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 200px)' }}>
+            <div className="flex-1 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 160px)' }}>
               {error && (
                 <div className="mx-4 sm:mx-8 mt-4 sm:mt-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl">
                   <div className="flex items-center">
@@ -550,9 +550,9 @@ const CustomerManagement = () => {
                 </div>
               )}
               
-              <form onSubmit={handleSubmit} className="p-4 sm:p-8 space-y-6 sm:space-y-8">
+              <form onSubmit={handleSubmit} className="p-4 sm:p-8 space-y-4 sm:space-y-6">
                 {/* Basic Information */}
-                <div className="space-y-6">
+                <div className="space-y-4 sm:space-y-6">
                   <div className="border-l-4 border-red-500 pl-4">
                     <h3 className="text-lg font-semibold text-gray-900">Basic Information</h3>
                     <p className="text-sm text-gray-600 mt-1">Essential details about the customer and business</p>
@@ -618,7 +618,7 @@ const CustomerManagement = () => {
                 </div>
 
                 {/* Address Information */}
-                <div className="space-y-6">
+                <div className="space-y-4 sm:space-y-6">
                   <div className="border-l-4 border-red-500 pl-4">
                     <h3 className="text-lg font-semibold text-gray-900">Address Information</h3>
                     <p className="text-sm text-gray-600 mt-1">Business location and shipping details</p>
@@ -690,7 +690,7 @@ const CustomerManagement = () => {
                 </div>
 
                 {/* Business Details */}
-                <div className="space-y-6">
+                <div className="space-y-4 sm:space-y-6">
                   <div className="border-l-4 border-red-500 pl-4">
                     <h3 className="text-lg font-semibold text-gray-900">Business Details</h3>
                     <p className="text-sm text-gray-600 mt-1">Business classification and financial terms</p>
@@ -750,7 +750,7 @@ const CustomerManagement = () => {
                 </div>
 
                 {/* Notes */}
-                <div className="space-y-6">
+                <div className="space-y-4 sm:space-y-6">
                   <div className="border-l-4 border-red-500 pl-4">
                     <h3 className="text-lg font-semibold text-gray-900">Additional Notes</h3>
                     <p className="text-sm text-gray-600 mt-1">Any special instructions or important information</p>
