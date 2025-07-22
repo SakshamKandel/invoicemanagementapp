@@ -47,8 +47,8 @@ const CustomerManagement = () => {
     zipCode: '',
     country: 'USA',
     businessType: 'restaurant',
-    paymentTerms: 'net30',
     taxId: '',
+    permitNumber: '',
     creditLimit: '',
     notes: ''
   });
@@ -62,13 +62,6 @@ const CustomerManagement = () => {
     { id: 'other', label: 'Other' }
   ];
 
-  const paymentTerms = [
-    { id: 'cash', label: 'Cash on Delivery' },
-    { id: 'net15', label: 'Net 15 Days' },
-    { id: 'net30', label: 'Net 30 Days' },
-    { id: 'net60', label: 'Net 60 Days' },
-    { id: 'net90', label: 'Net 90 Days' }
-  ];
 
   useEffect(() => {
     fetchCustomers();
@@ -112,7 +105,7 @@ const CustomerManagement = () => {
     setFormData({
       businessName: '', contactPerson: '', email: '', phone: '',
       address: '', address2: '', city: '', state: '', zipCode: '', country: 'USA',
-      businessType: 'restaurant', paymentTerms: 'net30', taxId: '', creditLimit: '', notes: ''
+      businessType: 'restaurant', taxId: '', permitNumber: '', creditLimit: '', notes: ''
     });
   };
 
@@ -150,8 +143,8 @@ const CustomerManagement = () => {
     e.preventDefault();
     
     // Validation
-    if (!formData.businessName?.trim() || !formData.contactPerson?.trim() || !formData.email?.trim()) {
-      setError('Please fill in all required fields: Business Name, Contact Person, and Email');
+    if (!formData.businessName?.trim() || !formData.contactPerson?.trim() || !formData.email?.trim() || !formData.permitNumber?.trim()) {
+      setError('Please fill in all required fields: Business Name, Contact Person, Email, and Permit Number');
       return;
     }
 
@@ -212,7 +205,7 @@ const CustomerManagement = () => {
     URL.revokeObjectURL(url);
   };
 
-  const CustomerCard = ({ customer }) => {
+  const CustomerCard = React.forwardRef(({ customer }, ref) => {
     const getBusinessIcon = (type) => {
       const icons = {
         restaurant: '🍽️',
@@ -231,6 +224,7 @@ const CustomerManagement = () => {
 
     return (
       <motion.div
+        ref={ref}
         layout
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -337,7 +331,7 @@ const CustomerManagement = () => {
         </div>
       </motion.div>
     );
-  };
+  });
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -716,18 +710,6 @@ const CustomerManagement = () => {
                       </select>
                     </div>
                     <div className="space-y-2">
-                      <label className="text-sm font-semibold text-gray-700">Payment Terms</label>
-                      <select
-                        value={formData.paymentTerms}
-                        onChange={(e) => handleInputChange('paymentTerms', e.target.value)}
-                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200"
-                      >
-                        {paymentTerms.map((term) => (
-                          <option key={term.id} value={term.id}>{term.label}</option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className="space-y-2">
                       <label className="text-sm font-semibold text-gray-700">Tax ID (Optional)</label>
                       <input
                         type="text"
@@ -735,6 +717,20 @@ const CustomerManagement = () => {
                         onChange={(e) => handleInputChange('taxId', e.target.value)}
                         className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200"
                         placeholder="XX-XXXXXXX"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-semibold text-gray-700 flex items-center">
+                        Permit Number
+                        <span className="text-red-500 ml-1">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.permitNumber}
+                        onChange={(e) => handleInputChange('permitNumber', e.target.value)}
+                        required
+                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200"
+                        placeholder="e.g., 06756556-1"
                       />
                     </div>
                     <div className="space-y-2">

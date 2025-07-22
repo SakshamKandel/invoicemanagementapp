@@ -11,8 +11,8 @@ import {
   X,
   Check
 } from 'lucide-react';
+import '../styles/FlipCard.css';
 import { products as fixedProducts } from '../data/products';
-import ChromaGrid from './ChromaGrid/ChromaGrid';
 import { useInvoice } from '../contexts/InvoiceContext';
 import { 
   saveProductsToFirebase, 
@@ -29,6 +29,7 @@ const ProductCatalog = ({ onNavigateToInvoices }) => {
   const [selectedBrand, setSelectedBrand] = useState('all');
   const [selectedAvailability, setSelectedAvailability] = useState('all');
   const [isProductsLoading, setIsProductsLoading] = useState(true);
+  const [flippedCards, setFlippedCards] = useState(new Set());
 
   // Force reset filters on component mount
   useEffect(() => {
@@ -294,26 +295,6 @@ const ProductCatalog = ({ onNavigateToInvoices }) => {
   };
 
 
-  const transformProductsForChromaGrid = (products) => {
-    return products.map((product) => ({
-      image: product.image,
-      title: product.name,
-      subtitle: `${product.brand} • ${product.size}`,
-      handle: `$${product.pricePerCase}/case`,
-      location: product.available ? '✅ In Stock' : '❌ Out of Stock',
-      borderColor: product.available ? '#10B981' : '#EF4444',
-      gradient: product.available 
-        ? 'linear-gradient(145deg, #10B981, #059669)'
-        : 'linear-gradient(145deg, #EF4444, #DC2626)',
-      url: null,
-      productId: product.id,
-      originalProduct: {
-        ...product,
-        onAddToCart: () => addItem(product),
-        onToggleStock: () => handleQuickStockToggle(product.id)
-      }
-    }));
-  };
 
   // Show loading state
   if (isProductsLoading) {
@@ -457,8 +438,21 @@ const ProductCatalog = ({ onNavigateToInvoices }) => {
                           +
                         </button>
                       </div>
+                      <div className="flex items-center space-x-2">
+                        <span className="text-xs text-gray-500">@</span>
+                        <input
+                          type="number"
+                          step="0.01"
+                          value={item.customPrice || item.pricePerCase}
+                          onChange={(e) => {
+                            const newPrice = parseFloat(e.target.value) || item.pricePerCase;
+                            updateItemQuantity(item.id, item.quantity, newPrice);
+                          }}
+                          className="w-16 px-2 py-1 text-center border border-gray-300 rounded text-xs"
+                        />
+                      </div>
                       <span className="text-gray-900 font-semibold min-w-[70px] md:min-w-[80px] text-right text-sm md:text-base">
-                        ${(item.quantity * item.pricePerCase).toFixed(2)}
+                        ${(item.quantity * (item.customPrice || item.pricePerCase)).toFixed(2)}
                       </span>
                       <button
                         onClick={() => removeItem(item.id)}
@@ -487,23 +481,115 @@ const ProductCatalog = ({ onNavigateToInvoices }) => {
           </div>
         ) : (
           <div className="space-y-8">
-            {/* ChromaGrid Section */}
+            {/* Product Cards Grid */}
             <div className="bg-white rounded-lg border border-gray-200 p-4 md:p-8">
               <div className="w-full max-w-7xl mx-auto">
-                <div className="h-[400px] sm:h-[500px] md:h-[600px] lg:h-[700px] relative overflow-hidden">
-                  <ChromaGrid 
-                    items={transformProductsForChromaGrid(filteredProducts)}
-                    className="w-full h-full flex justify-center items-center"
-                    radius={200}
-                    damping={0.2}
-                    fadeOut={0.3}
-                  />
+                <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4">
+                  {filteredProducts.map((product) => (
+                    <div
+                      key={product.id}
+                      className={`group relative bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 border-2 border-gray-200 overflow-hidden flip-card ${
+                        flippedCards.has(product.id) ? 'flipped' : ''
+                      }`}
+                      style={{ aspectRatio: '3/4', perspective: '1000px' }}
+                      onClick={() => {
+                        const newFlippedCards = new Set(flippedCards);
+                        if (flippedCards.has(product.id)) {
+                          newFlippedCards.delete(product.id);
+                        } else {
+                          newFlippedCards.add(product.id);
+                        }
+                        setFlippedCards(newFlippedCards);
+                      }}
+                    >
+                      <div className="flip-card-inner relative w-full h-full transition-transform duration-500 preserve-3d">
+                        {/* Front Side - Product Details */}
+                        <div className="flip-card-front absolute inset-0 w-full h-full backface-hidden">
+                          {/* Product Image */}
+                          <div className="relative h-28 xs:h-32 sm:h-36 md:h-40 overflow-hidden rounded-t-xl">
+                            <img
+                              src={product.image}
+                              alt={product.name}
+                              className="w-full h-full object-contain bg-white transition-transform duration-300"
+                              style={{ 
+                                objectFit: 'contain',
+                                backgroundColor: '#ffffff',
+                                padding: '4px sm:8px'
+                              }}
+                            />
+                            <div className={`absolute top-1 xs:top-2 right-1 xs:right-2 px-1 xs:px-2 py-0.5 xs:py-1 rounded-full text-xs font-bold text-white ${
+                              product.available ? 'bg-green-500' : 'bg-red-500'
+                            }`}>
+                              <span className="hidden xs:inline">{product.available ? 'In Stock' : 'Out of Stock'}</span>
+                              <span className="xs:hidden">{product.available ? '✓' : '✗'}</span>
+                            </div>
+                          </div>
+                          
+                          {/* Product Info */}
+                          <div className="p-2 xs:p-3 sm:p-4 flex flex-col justify-between flex-1">
+                            <div>
+                              <h3 className="font-bold text-gray-900 text-xs xs:text-sm sm:text-base mb-1 line-clamp-2 leading-tight">
+                                {product.name}
+                              </h3>
+                              <p className="text-xs text-gray-600 mb-1">
+                                {product.brand}
+                              </p>
+                              <p className="text-xs text-gray-500 mb-2">
+                                {product.size}
+                              </p>
+                            </div>
+                            
+                            <div className="mt-auto">
+                              <p className="font-bold text-blue-600 text-xs xs:text-sm">
+                                ${product.pricePerCase}/case
+                              </p>
+                              <p className="text-xs text-gray-500 leading-tight">
+                                {product.unitsPerCase} units
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* Back Side - Stock Management */}
+                        <div className="flip-card-back absolute inset-0 w-full h-full backface-hidden rotate-y-180 text-white rounded-xl flex flex-col items-center justify-center p-4">
+                          <div className="text-center mb-4">
+                            <h3 className="font-bold text-sm sm:text-base mb-2 text-shadow">
+                              Stock Management
+                            </h3>
+                            <p className="text-xs opacity-90 text-shadow">
+                              {product.name}
+                            </p>
+                          </div>
+                          
+                          <div className="flex flex-col items-center space-y-4">
+                            <div className="status-badge">
+                              Currently: {product.available ? 'In Stock' : 'Out of Stock'}
+                            </div>
+                            
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleQuickStockToggle(product.id);
+                              }}
+                              className="px-4 py-2 rounded-lg font-medium text-sm transition-all duration-300 transform hover:scale-105"
+                            >
+                              Mark as {product.available ? 'Out of Stock' : 'In Stock'}
+                            </button>
+                            
+                            <p className="text-xs opacity-75 text-center text-shadow">
+                              Click card to flip back
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
 
             {/* Product Action Buttons */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4 pt-4">
+            <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 md:gap-4 pt-4">
               {filteredProducts.map((product) => {
                 const isSelected = selectedItems.find(item => item.id === product.id);
                 return (
@@ -511,7 +597,7 @@ const ProductCatalog = ({ onNavigateToInvoices }) => {
                     key={product.id}
                     onClick={() => addItem(product)}
                     disabled={!product.available}
-                    className={`flex items-center justify-center space-x-2 px-4 py-3 md:px-6 rounded-lg font-medium transition-all duration-200 border shadow-sm hover:shadow-md text-sm md:text-base min-h-[48px] ${
+                    className={`flex items-center justify-center space-x-2 px-3 py-2 sm:px-4 sm:py-3 md:px-6 rounded-lg font-medium transition-all duration-200 border shadow-sm hover:shadow-md text-xs sm:text-sm md:text-base min-h-[40px] sm:min-h-[48px] ${
                       product.available
                         ? isSelected 
                           ? 'bg-rose-500 hover:bg-rose-600 text-white border-rose-500'
@@ -520,14 +606,14 @@ const ProductCatalog = ({ onNavigateToInvoices }) => {
                     }`}
                   >
                     {isSelected ? (
-                      <Check className="w-4 h-4 flex-shrink-0" />
+                      <Check className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
                     ) : (
-                      <Plus className="w-4 h-4 flex-shrink-0" />
+                      <Plus className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
                     )}
-                    <span className="truncate">
+                    <span className="truncate text-center">
                       {isSelected 
                         ? `Added (${isSelected.quantity})` 
-                        : `Add ${product.name}`
+                        : `Add ${product.name.length > 15 ? product.name.substring(0, 12) + '...' : product.name}`
                       }
                     </span>
                   </button>

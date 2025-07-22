@@ -26,6 +26,7 @@ import { collection, getDocs, updateDoc, deleteDoc, doc, query, orderBy, where }
 import { db } from '../firebase';
 import CreateInvoice from './CreateInvoice';
 import InvoicePDF from './InvoicePDF';
+import InvoicePDFService from '../services/InvoicePDFService';
 import { useInvoice } from '../contexts/InvoiceContext';
 import { products as fixedProducts } from '../data/products';
 
@@ -154,6 +155,65 @@ const InvoiceManagement = () => {
     );
   };
 
+  const generatePDF = async (invoice) => {
+    try {
+      console.log('🚀 Starting professional PDF generation for invoice:', invoice.invoiceNumber);
+      
+      const pdfService = new InvoicePDFService();
+      const filename = `Peak-Brew-Invoice-${invoice.invoiceNumber || invoice.id}.pdf`;
+      
+      await pdfService.downloadPDF(invoice, filename);
+      
+      console.log(`✅ Professional PDF generated and downloaded: ${filename}`);
+      
+      return true;
+    } catch (error) {
+      console.error('❌ PDF Generation Error:', error);
+      alert('Failed to generate PDF. Please try again.');
+      throw error;
+    }
+  };
+
+  // Function to automatically download PDF after invoice creation
+  const handleInvoiceCreated = async () => {
+    try {
+      closeCreateInvoice();
+      clearItems();
+      
+      // Refresh data to get the latest invoice
+      await fetchData();
+      
+      // Small delay to ensure the UI updates and we get the latest invoices
+      setTimeout(async () => {
+        try {
+          // Get the most recently created invoice (first in the sorted list)
+          const updatedInvoicesRes = await getDocs(query(collection(db, 'invoices'), orderBy('createdAt', 'desc')));
+          const updatedInvoices = updatedInvoicesRes.docs.map(d => ({ id: d.id, ...d.data() }));
+          
+          const latestInvoice = updatedInvoices[0];
+          
+          if (latestInvoice) {
+            console.log('🚀 Auto-generating PDF for invoice:', latestInvoice.invoiceNumber);
+            await generatePDF(latestInvoice);
+            console.log('✅ PDF auto-downloaded successfully');
+          } else {
+            console.warn('⚠️ No latest invoice found for auto PDF generation');
+          }
+        } catch (error) {
+          console.error('❌ Auto PDF generation failed:', error);
+          // Don't show error to user as invoice was still created successfully
+        }
+      }, 1000); // 1 second delay
+      
+    } catch (error) {
+      console.error('Error in handleInvoiceCreated:', error);
+      // Still close and refresh even if PDF generation fails
+      closeCreateInvoice();
+      clearItems();
+      fetchData();
+    }
+  };
+
   const InvoiceCard = ({ invoice }) => (
     <motion.div
       layout
@@ -171,28 +231,26 @@ const InvoiceManagement = () => {
               {invoice.customerName}
             </p>
           </div>
-          {getStatusPill(invoice.status)}
         </div>
         <div className="space-y-2 text-sm text-gray-600">
           <div className="flex justify-between">
             <span className="font-medium text-gray-500">Total Amount:</span>
-            <span className="font-bold text-lg text-gray-800">{formatCurrency(invoice.totalAmount)}</span>
+            <span className="font-bold text-lg text-gray-800">{formatCurrency(invoice.total || invoice.totalAmount)}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-gray-500">Issue Date:</span>
             <span className="font-medium">{formatDate(invoice.createdAt)}</span>
           </div>
-          <div className="flex justify-between">
-            <span className="text-gray-500">Due Date:</span>
-            <span className="font-medium">{formatDate(invoice.dueDate)}</span>
-          </div>
         </div>
       </div>
       <div className="flex justify-end space-x-2 mt-6">
-        <button onClick={() => { setSelectedInvoice(invoice); setIsPreviewModalOpen(true); }} className="p-2 text-gray-500 hover:text-red-500 hover:bg-gray-100 rounded-full transition-colors">
+        <button onClick={() => { setSelectedInvoice(invoice); setIsPreviewModalOpen(true); }} className="p-2 text-gray-500 hover:text-red-500 hover:bg-gray-100 rounded-full transition-colors" title="Preview Invoice">
           <Eye className="w-4 h-4" />
         </button>
-        {invoice.pdfUrl && <a href={invoice.pdfUrl} target="_blank" rel="noopener noreferrer" className="p-2 text-gray-500 hover:text-red-500 hover:bg-gray-100 rounded-full transition-colors"><Download className="w-4 h-4" /></a>}
+        <button onClick={() => generatePDF(invoice)} className="p-2 text-gray-500 hover:text-red-500 hover:bg-gray-100 rounded-full transition-colors" title="Download PDF">
+          <Download className="w-4 h-4" />
+        </button>
+        {invoice.pdfUrl && <a href={invoice.pdfUrl} target="_blank" rel="noopener noreferrer" className="p-2 text-gray-500 hover:text-red-500 hover:bg-gray-100 rounded-full transition-colors" title="Download Stored PDF"><FileText className="w-4 h-4" /></a>}
         <button onClick={() => deleteInvoice(invoice.id)} className="p-2 text-gray-500 hover:text-red-500 hover:bg-gray-100 rounded-full transition-colors">
           <Trash2 className="w-4 h-4" />
         </button>
@@ -278,21 +336,27 @@ const InvoiceManagement = () => {
               closeCreateInvoice();
               // Don't clear items automatically - let user decide
             }} 
-            onInvoiceCreated={() => { 
-              closeCreateInvoice(); 
-              clearItems(); // Clear items only after successful creation
-              fetchData(); 
-            }} 
+            onInvoiceCreated={handleInvoiceCreated} 
           />
         </Modal>
       </ModalOverlay>
 
-      <ModalOverlay isOpen={isPreviewModalOpen} onOpenChange={setIsPreviewModalOpen} className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm flex items-center justify-center p-4">
-        <Modal className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[95vh]">
-          <Dialog className="outline-none p-6">
-            <div className="flex justify-between items-center mb-4">
-              <Heading className="text-2xl font-bold text-gray-800">Invoice Preview</Heading>
-              <button onClick={() => setIsPreviewModalOpen(false)} className="p-2 text-gray-500 hover:text-red-500 rounded-full"><XCircle className="w-6 h-6" /></button>
+      <ModalOverlay isOpen={isPreviewModalOpen} onOpenChange={setIsPreviewModalOpen} className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4">
+        <Modal className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[98vh] overflow-hidden mx-2 sm:mx-4">
+          <Dialog className="outline-none p-3 sm:p-6 max-h-[98vh] overflow-y-auto">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3 sm:gap-0">
+              <Heading className="text-xl sm:text-2xl font-bold text-gray-800">Invoice Preview</Heading>
+              <div className="flex items-center space-x-2">
+                <button 
+                  onClick={() => selectedInvoice && generatePDF(selectedInvoice)} 
+                  className="px-3 sm:px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs sm:text-sm font-medium transition-colors flex items-center space-x-1 sm:space-x-2"
+                >
+                  <Download className="w-4 h-4" />
+                  <span className="hidden sm:inline">Download PDF</span>
+                  <span className="sm:hidden">PDF</span>
+                </button>
+                <button onClick={() => setIsPreviewModalOpen(false)} className="p-2 text-gray-500 hover:text-red-500 rounded-full"><XCircle className="w-6 h-6" /></button>
+              </div>
             </div>
             {selectedInvoice && <InvoicePDF invoice={selectedInvoice} isPreview={true} />}
           </Dialog>

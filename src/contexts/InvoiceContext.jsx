@@ -67,14 +67,18 @@ export const InvoiceProvider = ({ children }) => {
     setSelectedItems(selectedItems.filter(item => item.id !== productId));
   };
 
-  const updateItemQuantity = (productId, quantity) => {
+  const updateItemQuantity = (productId, quantity, customPrice) => {
     if (quantity <= 0) {
       removeItem(productId);
       return;
     }
     setSelectedItems(selectedItems.map(item =>
       item.id === productId
-        ? { ...item, quantity: parseInt(quantity) }
+        ? { 
+            ...item, 
+            quantity: parseInt(quantity),
+            ...(customPrice !== undefined && { customPrice: customPrice })
+          }
         : item
     ));
   };
@@ -98,7 +102,10 @@ export const InvoiceProvider = ({ children }) => {
   };
 
   const getTotalAmount = () => {
-    return selectedItems.reduce((total, item) => total + (item.pricePerCase * item.quantity), 0);
+    return selectedItems.reduce((total, item) => {
+      const price = item.customPrice !== undefined ? item.customPrice : item.pricePerCase;
+      return total + (price * item.quantity);
+    }, 0);
   };
 
   const getTotalItems = () => {
@@ -106,15 +113,18 @@ export const InvoiceProvider = ({ children }) => {
   };
 
   const getFormattedItems = () => {
-    return selectedItems.map(item => ({
-      id: `invoice-item-${item.id}-${Date.now()}`,
-      productId: item.id,
-      name: item.name,
-      description: `${item.brand} - ${item.size} (${item.unitsPerCase} units per case)`,
-      quantity: item.quantity,
-      price: item.pricePerCase,
-      total: item.quantity * item.pricePerCase
-    }));
+    return selectedItems.map(item => {
+      const price = item.customPrice !== undefined ? item.customPrice : item.pricePerCase;
+      return {
+        id: `invoice-item-${item.id}-${Date.now()}`,
+        productId: item.id,
+        name: item.name,
+        description: `${item.brand} - ${item.size} (${item.unitsPerCase} units per case)`,
+        quantity: item.quantity,
+        price: price,
+        total: item.quantity * price
+      };
+    });
   };
 
   // Execute pending navigation when modal opens

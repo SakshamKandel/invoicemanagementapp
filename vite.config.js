@@ -9,6 +9,23 @@ export default defineConfig({
     port: 5173
   },
   base: './',
+  define: {
+    global: 'globalThis',
+    'process.env': '{}',
+  },
+  resolve: {
+    alias: {
+      buffer: 'buffer',
+      crypto: 'crypto-browserify',
+      stream: 'stream-browserify',
+      util: 'util',
+      events: 'events',
+      process: 'process/browser',
+    },
+  },
+  optimizeDeps: {
+    include: ['buffer', 'crypto-browserify', 'stream-browserify', 'util', 'events', 'process']
+  },
   build: {
     assetsDir: 'assets',
     outDir: 'dist',

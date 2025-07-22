@@ -22,60 +22,48 @@ const ProductCard = ({ product, onAddToInvoice, onStockStatusChange }) => {
 
   return (
     <div 
-      className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden group hover:shadow-lg transition-all duration-300 hover:-translate-y-1 relative"
+      className="bg-white rounded-lg sm:rounded-xl shadow-sm border border-gray-200 overflow-hidden group hover:shadow-lg transition-all duration-300 hover:-translate-y-1 relative flex flex-col h-full"
       onContextMenu={handleContextMenu}
     >
-      <div className="aspect-w-3 aspect-h-2 bg-gray-100">
+      <div className="aspect-square bg-gray-100 relative overflow-hidden">
         <img 
           src={product.image} 
           alt={product.name}
-          className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
         />
       </div>
       
-      <div className="p-4">
-        <div className="flex justify-between items-start mb-2">
-          <h3 className="text-lg font-semibold text-gray-900">{currentProduct.name}</h3>
-          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-            currentProduct.available 
-              ? 'bg-green-100 text-green-800' 
-              : 'bg-red-100 text-red-800'
-          }`}>
-            {currentProduct.available ? 'Available' : 'Out of Stock'}
-          </span>
-        </div>
-        
-        <p className="text-sm text-gray-600 mb-3">{product.description}</p>
-        
-        <div className="space-y-2 text-sm text-gray-700">
-          <div className="flex justify-between">
-            <span>Brand:</span>
-            <span className="font-medium">{product.brand}</span>
-          </div>
-          <div className="flex justify-between">
-            <span>Size:</span>
-            <span className="font-medium">{product.size}</span>
-          </div>
-          <div className="flex justify-between">
-            <span>Alcohol:</span>
-            <span className="font-medium">{product.alcohol}</span>
-          </div>
-          <div className="flex justify-between">
-            <span>Units per case:</span>
-            <span className="font-medium">{product.unitsPerCase}</span>
-          </div>
-        </div>
-        
-        <div className="mt-4 pt-4 border-t border-gray-200">
-          <div className="flex justify-between items-center">
-            <span className="text-xl font-bold text-gray-900">
-              ${product.pricePerCase}
-              <span className="text-sm font-normal text-gray-500">/case</span>
+      <div className="p-2 sm:p-3 md:p-4 flex-1 flex flex-col">
+        <div className="flex flex-col gap-1 mb-2">
+          <div className="flex justify-between items-start gap-1">
+            <h3 className="text-sm sm:text-base md:text-lg font-semibold text-gray-900 line-clamp-2 flex-1">{currentProduct.name}</h3>
+            <span className={`px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-full text-xs font-medium whitespace-nowrap ${
+              currentProduct.available 
+                ? 'bg-green-100 text-green-800' 
+                : 'bg-red-100 text-red-800'
+            }`}>
+              {currentProduct.available ? '✓' : '✗'}
             </span>
+          </div>
+        </div>
+        
+        <div className="space-y-1 text-xs sm:text-sm text-gray-700 mb-3">
+          <div className="text-center text-gray-600 font-medium">{product.brand}</div>
+          <div className="text-center text-gray-500">{product.size}</div>
+        </div>
+        
+        <div className="mt-auto pt-2 sm:pt-3 border-t border-gray-200">
+          <div className="flex flex-col items-center gap-2">
+            <div className="text-center">
+              <span className="text-lg sm:text-xl font-bold text-gray-900 block">
+                ${product.pricePerCase}
+              </span>
+              <span className="text-xs text-gray-500">{product.unitsPerCase} units</span>
+            </div>
             <Button
               onPress={() => onAddToInvoice(currentProduct)}
               isDisabled={!currentProduct.available}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors duration-200 ${
+              className={`w-full px-2 sm:px-3 py-1.5 sm:py-2 rounded-md font-medium transition-colors duration-200 text-xs sm:text-sm ${
                 currentProduct.available
                   ? 'bg-blue-600 hover:bg-blue-700 text-white'
                   : 'bg-gray-300 text-gray-500 cursor-not-allowed'

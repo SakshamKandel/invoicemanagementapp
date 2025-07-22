@@ -30,17 +30,17 @@ function Navigation({ children }) {
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-4">
-              <Link to="/customers" className="flex items-center space-x-2">
-                <img src={peakBrewLogo} alt="Peak Brew Logo" className="h-12 w-auto" />
-                <span className="text-xl font-bold text-gray-900 hidden sm:block">Peak Brew Trading</span>
+        <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8">
+          <div className="flex justify-between items-center h-14 sm:h-16">
+            <div className="flex items-center space-x-2 sm:space-x-4">
+              <Link to="/customers" className="flex items-center space-x-1 sm:space-x-2">
+                <img src={peakBrewLogo} alt="Peak Brew Logo" className="h-8 sm:h-12 w-auto" />
+                <span className="text-lg sm:text-xl font-bold text-gray-900 hidden xs:block">Peak Brew Trading</span>
               </Link>
             </div>
             
-            <div className="flex items-center space-x-4">
-              <div className="text-right">
+            <div className="flex items-center space-x-2 sm:space-x-4">
+              <div className="text-right hidden sm:block">
                 <p className="text-sm font-medium text-gray-900">
                   {currentUser?.email?.split('@')[0]}
                 </p>
@@ -50,7 +50,7 @@ function Navigation({ children }) {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={logout}
-                className="flex items-center space-x-2 bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition-all duration-200"
+                className="flex items-center space-x-1 sm:space-x-2 bg-red-500 hover:bg-red-600 text-white px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg transition-all duration-200 text-sm"
               >
                 <LogOut className="w-4 h-4" />
                 <span className="hidden sm:inline">Logout</span>
@@ -61,39 +61,41 @@ function Navigation({ children }) {
       </header>
 
       <div className="bg-white border-b border-gray-200 sticky top-16 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <nav className="flex space-x-1 py-2">
-            {tabs.map((tab) => {
-              const IconComponent = tab.icon;
-              const active = isActive(tab.path);
-              return (
-                <Link
-                  key={tab.id}
-                  to={tab.path}
-                  className={`
-                    relative cursor-pointer px-4 py-2 text-sm font-medium transition-all duration-200 outline-none rounded-lg flex items-center space-x-2
-                    ${active ? 'bg-red-500 text-white' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'}
-                  `}
-                >
-                  <IconComponent className="w-4 h-4" />
-                  <span>{tab.label}</span>
-                  {active && (
-                    <motion.div
-                      layoutId="activeTab"
-                      className="absolute inset-0 bg-red-500 rounded-lg -z-10"
-                      initial={false}
-                      transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                    />
-                  )}
-                </Link>
-              );
-            })}
+        <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8">
+          <nav className="flex space-x-1 py-2 overflow-x-auto scrollbar-hide">
+            <div className="flex space-x-1 min-w-max">
+              {tabs.map((tab) => {
+                const IconComponent = tab.icon;
+                const active = isActive(tab.path);
+                return (
+                  <Link
+                    key={tab.id}
+                    to={tab.path}
+                    className={`
+                      relative cursor-pointer px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium transition-all duration-200 outline-none rounded-lg flex items-center space-x-1 sm:space-x-2 whitespace-nowrap
+                      ${active ? 'bg-red-500 text-white' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'}
+                    `}
+                  >
+                    <IconComponent className="w-4 h-4 flex-shrink-0" />
+                    <span className="hidden xs:inline sm:inline">{tab.label}</span>
+                    {active && (
+                      <motion.div
+                        layoutId="activeTab"
+                        className="absolute inset-0 bg-red-500 rounded-lg -z-10"
+                        initial={false}
+                        transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                      />
+                    )}
+                  </Link>
+                );
+              })}
+            </div>
           </nav>
         </div>
       </div>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="min-h-[calc(100vh-200px)]">
+      <main className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-4 sm:py-6 lg:py-8">
+        <div className="min-h-[calc(100vh-180px)] sm:min-h-[calc(100vh-200px)]">
           {children}
         </div>
       </main>

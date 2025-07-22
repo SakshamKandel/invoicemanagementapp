@@ -14,7 +14,10 @@
       "Bash(ls:*)",
       "Bash(find:*)",
       "Bash(timeout 30 npm run build)",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "Bash(cat:*)",
+      "Bash(pkill:*)",
+      "Bash(true)"
     ],
     "deny": []
   }

@@ -1,0 +1,130 @@
+/* Flip Card Styles */
+.flip-card {
+  perspective: 1000px;
+  cursor: pointer;
+}
+
+.flip-card-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  text-align: center;
+  transition: transform 0.6s ease-in-out;
+  transform-style: preserve-3d;
+}
+
+.flip-card.flipped .flip-card-inner {
+  transform: rotateY(180deg);
+}
+
+.flip-card-front,
+.flip-card-back {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  border-radius: 0.75rem;
+}
+
+.flip-card-back {
+  transform: rotateY(180deg);
+}
+
+/* Utility classes for 3D transforms */
+.preserve-3d {
+  transform-style: preserve-3d;
+}
+
+.backface-hidden {
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+
+.rotate-y-180 {
+  transform: rotateY(180deg);
+}
+
+/* Remove hover effects - only click to flip */
+.flip-card:hover .flip-card-inner {
+  /* No hover flip */
+}
+
+/* Airbnb style colors for the back side */
+.flip-card-back {
+  background: linear-gradient(135deg, #FF5A5F 0%, #FF385C 100%);
+  box-shadow: 0 8px 25px rgba(255, 56, 92, 0.3);
+}
+
+.flip-card-back button {
+  background: rgba(255, 255, 255, 0.2);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+}
+
+.flip-card-back button:hover {
+  background: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+}
+
+/* Mobile responsiveness */
+@media (max-width: 640px) {
+  /* Make flip cards smaller on mobile */
+  .flip-card-back {
+    font-size: 0.875rem;
+  }
+  
+  .flip-card-back h3 {
+    font-size: 0.75rem;
+  }
+  
+  .flip-card-back button {
+    padding: 0.5rem 1rem;
+    font-size: 0.75rem;
+  }
+  
+  .flip-card-back p {
+    font-size: 0.625rem;
+  }
+}
+
+/* Extra small screens */
+@media (max-width: 480px) {
+  .flip-card-inner {
+    font-size: 0.75rem;
+  }
+  
+  .flip-card-back {
+    padding: 0.75rem;
+  }
+  
+  .flip-card-back button {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.625rem;
+  }
+}
+
+/* Status badges with Airbnb style */
+.flip-card-back .status-badge {
+  background: rgba(255, 255, 255, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(10px);
+  border-radius: 20px;
+  padding: 0.5rem 1rem;
+  color: white;
+  font-weight: 600;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* Smooth card transitions */
+.flip-card {
+  transition: transform 0.2s ease;
+}
+
+.flip-card:active {
+  transform: scale(0.98);
+}

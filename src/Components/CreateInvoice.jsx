@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Plus, Minus, Save, Send, Search, User, Mail, Phone, MapPin } from 'lucide-react';
+import { X, Plus, Minus, Save, Send, Search, User, Mail, Phone, MapPin, FileText } from 'lucide-react';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
@@ -37,6 +37,8 @@ const CreateInvoice = ({ customers = [], onClose, onInvoiceCreated }) => {
   const [items, setItems] = useState([]);
   const [selectedProduct, setSelectedProduct] = useState('');
   const [quantity, setQuantity] = useState(1);
+  const [manualPrice, setManualPrice] = useState('');
+  const [useManualPrice, setUseManualPrice] = useState(false);
   
   // Calculations
   const [taxRate, setTaxRate] = useState(0);
@@ -161,7 +163,7 @@ const CreateInvoice = ({ customers = [], onClose, onInvoiceCreated }) => {
       return;
     }
 
-    const price = product.pricePerCase;
+    const price = useManualPrice && manualPrice ? parseFloat(manualPrice) : product.pricePerCase;
     const newItem = {
       id: Date.now() + Math.random(),
       productId: product.id,
@@ -182,6 +184,8 @@ const CreateInvoice = ({ customers = [], onClose, onInvoiceCreated }) => {
     // Clear form
     setSelectedProduct('');
     setQuantity(1);
+    setManualPrice('');
+    setUseManualPrice(false);
     setError(''); // Clear any previous errors
   };
 
@@ -225,8 +229,8 @@ const CreateInvoice = ({ customers = [], onClose, onInvoiceCreated }) => {
       return;
     }
 
-    if (!businessName.trim() || !email.trim()) {
-      setError('Please fill in business name and email');
+    if (!businessName.trim()) {
+      setError('Please fill in business name');
       return;
     }
 
@@ -244,10 +248,12 @@ const CreateInvoice = ({ customers = [], onClose, onInvoiceCreated }) => {
           address: address.trim(),
           city: city.trim(),
           state: state.trim(),
-          zipCode: zipCode.trim()
+          zipCode: zipCode.trim(),
         },
         customerName: businessName.trim(),
         customerEmail: email.trim(),
+        customerPhone: phone.trim(),
+        customerAddress: `${address.trim()}${city.trim() ? ', ' + city.trim() : ''}${state.trim() ? ', ' + state.trim() : ''}${zipCode.trim() ? ' ' + zipCode.trim() : ''}`.trim(),
         issueDate,
         dueDate,
         items,
@@ -273,12 +279,12 @@ const CreateInvoice = ({ customers = [], onClose, onInvoiceCreated }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-6xl w-full max-h-[95vh] overflow-hidden">
+    <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-2 sm:p-4">
+      <div className="bg-white rounded-lg shadow-xl max-w-6xl w-full max-h-[98vh] overflow-hidden mx-2 sm:mx-4">
         
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <h2 className="text-xl font-semibold text-gray-900">Create New Invoice</h2>
+        <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200">
+          <h2 className="text-lg sm:text-xl font-semibold text-gray-900">Create New Invoice</h2>
           <button
             onClick={onClose}
             className="p-2 hover:bg-gray-100 rounded-full transition-colors"
@@ -287,9 +293,9 @@ const CreateInvoice = ({ customers = [], onClose, onInvoiceCreated }) => {
           </button>
         </div>
 
-        <div className="p-6 max-h-[80vh] overflow-y-auto">
+        <div className="p-4 sm:p-6 max-h-[85vh] overflow-y-auto">
           {error && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg">
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
               {error}
             </div>
           )}
@@ -297,11 +303,11 @@ const CreateInvoice = ({ customers = [], onClose, onInvoiceCreated }) => {
           {productsLoading && (
             <div className="mb-4 p-4 bg-blue-50 border border-blue-200 text-blue-700 rounded-lg text-center">
               <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto mb-2"></div>
-              Loading products...
+              <span className="text-sm">Loading products...</span>
             </div>
           )}
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-8">
             
             {/* Left Column - Customer & Invoice Details */}
             <div className="space-y-6">
@@ -395,6 +401,7 @@ const CreateInvoice = ({ customers = [], onClose, onInvoiceCreated }) => {
                           placeholder="Enter phone (optional)"
                         />
                       </div>
+
                     </div>
                   </div>
                 ) : (
@@ -526,21 +533,56 @@ const CreateInvoice = ({ customers = [], onClose, onInvoiceCreated }) => {
                     </select>
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Quantity
-                    </label>
-                    <input
-                      type="number"
-                      value={quantity}
-                      onChange={(e) => {
-                        const newQuantity = parseInt(e.target.value) || 1;
-                        console.log('Quantity changed to:', newQuantity);
-                        setQuantity(newQuantity);
-                      }}
-                      min="1"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Quantity
+                      </label>
+                      <input
+                        type="number"
+                        value={quantity}
+                        onChange={(e) => {
+                          const newQuantity = parseInt(e.target.value) || 1;
+                          console.log('Quantity changed to:', newQuantity);
+                          setQuantity(newQuantity);
+                        }}
+                        min="1"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Price Override
+                      </label>
+                      <div className="relative">
+                        <input
+                          type="number"
+                          step="0.01"
+                          value={manualPrice}
+                          onChange={(e) => {
+                            setManualPrice(e.target.value);
+                            setUseManualPrice(e.target.value !== '');
+                          }}
+                          placeholder={selectedProduct ? `$${products.find(p => p.id.toString() === selectedProduct.toString())?.pricePerCase || 0}` : 'Default price'}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                        {manualPrice && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setManualPrice('');
+                              setUseManualPrice(false);
+                            }}
+                            className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-red-500"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Leave empty to use catalog price
+                      </p>
+                    </div>
                   </div>
 
                   <button
@@ -655,17 +697,17 @@ const CreateInvoice = ({ customers = [], onClose, onInvoiceCreated }) => {
           </div>
 
           {/* Action Buttons */}
-          <div className="flex justify-end space-x-3 mt-6 pt-6 border-t border-gray-200">
+          <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3 mt-6 pt-6 border-t border-gray-200">
             <button
               onClick={onClose}
-              className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
+              className="w-full sm:w-auto px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
             >
               Cancel
             </button>
             <button
               onClick={() => handleSaveInvoice('draft')}
               disabled={loading || items.length === 0}
-              className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+              className="w-full sm:w-auto px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
             >
               <Save className="w-4 h-4 mr-2" />
               Save Draft
@@ -673,7 +715,7 @@ const CreateInvoice = ({ customers = [], onClose, onInvoiceCreated }) => {
             <button
               onClick={() => handleSaveInvoice('sent')}
               disabled={loading || items.length === 0}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+              className="w-full sm:w-auto px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
             >
               <Send className="w-4 h-4 mr-2" />
               Save & Send
