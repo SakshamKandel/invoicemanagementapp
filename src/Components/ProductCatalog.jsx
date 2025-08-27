@@ -47,9 +47,9 @@ const ProductCatalog = ({ onNavigateToInvoices }) => {
       try {
         const firebaseProducts = await loadProductsFromFirebase();
         
-        // If Firebase has corrupted data (not exactly 6 products), force reset
-        if (!firebaseProducts || firebaseProducts.length !== 6) {
-          console.warn('Firebase has incorrect number of products:', firebaseProducts?.length || 0, 'expected 6. Forcing reset.');
+        // If Firebase has corrupted data (not exactly 7 products), force reset
+        if (!firebaseProducts || firebaseProducts.length !== 7) {
+          console.warn('Firebase has incorrect number of products:', firebaseProducts?.length || 0, 'expected 7. Forcing reset.');
           await clearAllProductsFromFirebase();
           await saveProductsToFirebase(fixedProducts, true);
           setProducts(fixedProducts);
@@ -92,7 +92,7 @@ const ProductCatalog = ({ onNavigateToInvoices }) => {
     getTotalItems
   } = useInvoice();
 
-  const brands = ['Yak', 'Gorkha', 'Nepal Ice'];
+  const brands = ['Yak', 'Gorkha', 'Nepal Ice', 'Arna'];
 
   // Debug current filter state
   useEffect(() => {

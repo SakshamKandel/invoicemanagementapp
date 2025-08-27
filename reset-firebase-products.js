@@ -87,6 +87,18 @@ const products = [
     available: true,
     image: '/images/nepal-ice-premium.png',
     description: 'Premium Beer • 5.5%'
+  },
+  {
+    id: 7,
+    name: 'Arna',
+    brand: 'Arna',
+    size: '330ml',
+    alcohol: '5%',
+    unitsPerCase: 24,
+    pricePerCase: 45,
+    available: true,
+    image: '/images/Arna.png',
+    description: 'Premium Beer • 5%'
   }
 ];
 
@@ -119,7 +131,7 @@ async function resetProducts() {
     
     await batch.commit();
     console.log('Successfully reset all products with correct image paths and availability');
-    console.log('All 6 products are now available');
+    console.log('All 7 products are now available');
     
   } catch (error) {
     console.error('Error resetting products:', error);

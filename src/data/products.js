@@ -11,6 +11,7 @@ const barahsingheHazyImg = '/images/barahsinghe-hazy.png';
 const gorkhaPremiumImg = '/images/gorkha-premium.png';
 const gorkhaStrongImg = '/images/gorkha-strong.png';
 const nepalIcePremiumImg = '/images/nepal-ice-premium.png';
+const arnaImg = '/images/Arna.png';
 
 export const products = [
   {
@@ -84,6 +85,18 @@ export const products = [
     available: true,
     image: nepalIcePremiumImg,
     description: 'Premium Beer • 5.5%'
+  },
+  {
+    id: 7,
+    name: 'Arna',
+    brand: 'Arna',
+    size: '330ml',
+    alcohol: '5%',
+    unitsPerCase: 24,
+    pricePerCase: 45,
+    available: true,
+    image: arnaImg,
+    description: 'Premium Beer • 5%'
   }
 ];
 
