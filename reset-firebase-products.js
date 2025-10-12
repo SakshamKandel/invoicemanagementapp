@@ -29,6 +29,18 @@ const products = [
     description: 'Premium Pilsner • 5%'
   },
   {
+    id: 7,
+    name: 'Barahsinghe Craft Pilsner Can',
+    brand: 'Barahsinghe',
+    size: '500ml',
+    alcohol: '5%',
+    unitsPerCase: 24,
+    pricePerCase: 45,
+    available: true,
+    image: '/images/barahsinghe-craft-pilsner-can.webp',
+    description: 'Craft Pilsner Can • 5%'
+  },
+  {
     id: 2,
     name: 'Barahsinghe Pilsner',
     brand: 'Yak',
@@ -89,7 +101,7 @@ const products = [
     description: 'Premium Beer • 5.5%'
   },
   {
-    id: 7,
+    id: 8,
     name: 'Arna',
     brand: 'Arna',
     size: '330ml',
@@ -131,7 +143,7 @@ async function resetProducts() {
     
     await batch.commit();
     console.log('Successfully reset all products with correct image paths and availability');
-    console.log('All 7 products are now available');
+    console.log('All 8 products are now available (including Barahsinghe Craft Pilsner Can)');
     
   } catch (error) {
     console.error('Error resetting products:', error);

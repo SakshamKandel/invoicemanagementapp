@@ -5,9 +5,11 @@
 // src/assets/gorkha-premium.png = Gorkha Premium
 // src/assets/gorkha-strong.png = Gorkha Strong
 // src/assets/nepal-ice-premium.png = Nepal Ice
+
 const barahsinghePilsner330mlImg = '/images/barahsinghe-pilsner.png';
 const barahsinghePilsner650mlImg = '/images/Barahsinghe_pilsner_650ml-630x520-630x520.png';
 const barahsingheHazyImg = '/images/barahsinghe-hazy.png';
+const barahsingheCraftPilsnerCanImg = '/images/barahsinghe-craft-pilsner-can.webp';
 const gorkhaPremiumImg = '/images/gorkha-premium.png';
 const gorkhaStrongImg = '/images/gorkha-strong.png';
 const nepalIcePremiumImg = '/images/nepal-ice-premium.png';
@@ -25,6 +27,18 @@ export const products = [
     available: true,
     image: barahsinghePilsner330mlImg,
     description: 'Premium Pilsner • 5%'
+  },
+  {
+    id: 7,
+    name: 'Barahsinghe Craft Pilsner Can',
+    brand: 'Barahsinghe',
+    size: '500ml',
+    alcohol: '5%',
+    unitsPerCase: 24,
+    pricePerCase: 45,
+    available: true,
+    image: barahsingheCraftPilsnerCanImg,
+    description: 'Craft Pilsner Can • 5%'
   },
   {
     id: 2,
@@ -87,7 +101,7 @@ export const products = [
     description: 'Premium Beer • 5.5%'
   },
   {
-    id: 7,
+    id: 8,
     name: 'Arna',
     brand: 'Arna',
     size: '330ml',
