@@ -414,7 +414,7 @@ const CustomerManagement = () => {
       {/* Editorial Modal */}
       <AnimatePresence>
         {isModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-6">
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -427,10 +427,10 @@ const CustomerManagement = () => {
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative w-full max-w-4xl bg-white border-4 border-brand-600 shadow-2xl max-h-[90vh] overflow-hidden flex flex-col md:flex-row"
+              className="relative w-full max-w-4xl bg-white border-4 border-brand-600 shadow-2xl overflow-y-auto md:overflow-hidden flex flex-col h-full md:h-auto md:max-h-[90vh] md:flex-row"
             >
               {/* Left Sidebar - Context */}
-              <div className="hidden md:flex w-1/3 bg-brand-600 text-white p-8 flex-col justify-between relative overflow-hidden">
+              <div className="hidden md:flex w-1/3 bg-brand-600 text-white p-8 flex-col justify-between relative overflow-hidden shrink-0">
                 <div className="relative z-10">
                   <div className="w-12 h-12 bg-white text-brand-600 flex items-center justify-center font-black text-xl mb-6">
                     {selectedCustomer ? selectedCustomer.businessName.substring(0, 2).toUpperCase() : <Plus className="w-6 h-6" />}
@@ -465,8 +465,8 @@ const CustomerManagement = () => {
               </div>
 
               {/* Right Content - Form */}
-              <div className="flex-1 flex flex-col bg-white">
-                <div className="md:hidden bg-brand-600 text-white p-6 flex justify-between items-center">
+              <div className="flex-1 flex flex-col bg-white h-auto md:h-full">
+                <div className="md:hidden bg-brand-600 text-white p-6 flex justify-between items-center shrink-0">
                   <h2 className="text-xl font-black uppercase tracking-tighter">
                     {selectedCustomer ? 'Edit Client' : 'New Client'}
                   </h2>
@@ -475,7 +475,7 @@ const CustomerManagement = () => {
                   </button>
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-8">
+                <div className="flex-1 md:overflow-y-auto p-6 md:p-8">
                   <form onSubmit={handleSubmit} className="space-y-10">
                     {/* Identity Section */}
                     <div className="space-y-6">
