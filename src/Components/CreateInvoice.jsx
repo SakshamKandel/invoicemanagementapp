@@ -249,7 +249,7 @@ const CreateInvoice = ({ customers = [], onClose, onInvoiceCreated }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-6">
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -262,7 +262,7 @@ const CreateInvoice = ({ customers = [], onClose, onInvoiceCreated }) => {
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 20 }}
-        className="relative w-full max-w-7xl bg-white shadow-2xl overflow-hidden flex flex-col h-[90vh] border-4 border-brand-600"
+        className="relative w-full max-w-7xl bg-white shadow-2xl overflow-y-auto md:overflow-hidden flex flex-col h-full md:h-[90vh] border-4 border-brand-600"
       >
         {/* Header */}
         <div className="bg-brand-600 text-white p-6 flex justify-between items-center shrink-0">
@@ -282,9 +282,9 @@ const CreateInvoice = ({ customers = [], onClose, onInvoiceCreated }) => {
           </div>
         </div>
 
-        <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
+        <div className="flex-1 flex flex-col lg:flex-row md:overflow-hidden h-auto md:h-full">
           {/* Left Column - Details */}
-          <div className="w-full lg:w-1/3 bg-gray-50 border-r border-gray-200 flex flex-col overflow-y-auto">
+          <div className="w-full lg:w-1/3 bg-gray-50 border-r border-gray-200 flex flex-col md:overflow-y-auto h-auto md:h-full shrink-0">
             <div className="p-6 space-y-8">
               {/* Customer Selection */}
               <div className="space-y-4">
@@ -404,7 +404,7 @@ const CreateInvoice = ({ customers = [], onClose, onInvoiceCreated }) => {
           </div>
 
           {/* Right Column - Items & Totals */}
-          <div className="flex-1 flex flex-col bg-white">
+          <div className="flex-1 flex flex-col bg-white h-auto md:h-full">
             {/* Add Item Bar */}
             <div className="p-6 border-b border-gray-100 bg-gray-50/50">
               <div className="flex flex-col md:flex-row gap-4 items-end">
@@ -459,7 +459,7 @@ const CreateInvoice = ({ customers = [], onClose, onInvoiceCreated }) => {
             </div>
 
             {/* Items List */}
-            <div className="flex-1 overflow-y-auto p-6">
+            <div className="flex-1 md:overflow-y-auto p-6">
               {items.length === 0 ? (
                 <div className="h-full flex flex-col items-center justify-center text-gray-300">
                   <FileText className="w-16 h-16 mb-4 opacity-20" />
