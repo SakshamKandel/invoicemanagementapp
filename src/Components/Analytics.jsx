@@ -1,19 +1,39 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { 
-  DollarSign, 
-  FileText, 
-  Users, 
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  DollarSign,
+  FileText,
+  Users,
   Package,
   TrendingUp,
   TrendingDown,
   Calendar,
   BarChart3,
-  PieChart,
-  Activity
+  PieChart as PieChartIcon,
+  Activity,
+  Download,
+  ArrowRight,
+  Filter
 } from 'lucide-react';
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  Cell,
+  Legend
+} from 'recharts';
 import { collection, getDocs, query, where, orderBy, Timestamp } from 'firebase/firestore';
 import { db } from '../firebase';
+
+const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
 
 const Analytics = () => {
   const [loading, setLoading] = useState(true);
@@ -25,8 +45,12 @@ const Analytics = () => {
     totalProducts: 0,
     paidAmount: 0,
     revenueGrowth: 0,
-    invoiceGrowth: 0
+    invoiceGrowth: 0,
+    averageOrderValue: 0,
+    revenuePerCustomer: 0
   });
+  const [revenueData, setRevenueData] = useState([]);
+  const [categoryData, setCategoryData] = useState([]);
   const [recentActivity, setRecentActivity] = useState([]);
   const [topProducts, setTopProducts] = useState([]);
   const [topCustomers, setTopCustomers] = useState([]);
@@ -85,12 +109,12 @@ const Analytics = () => {
   const fetchStats = async () => {
     try {
       const filterDate = getDateFilter();
-      
+
       // Fetch invoices
       const invoicesQuery = query(
         collection(db, 'invoices'),
         where('createdAt', '>=', Timestamp.fromDate(filterDate)),
-        orderBy('createdAt', 'desc')
+        orderBy('createdAt', 'asc')
       );
       const invoicesSnapshot = await getDocs(invoicesQuery);
       const invoices = invoicesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -103,11 +127,11 @@ const Analytics = () => {
       const productsSnapshot = await getDocs(collection(db, 'products'));
       const products = productsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-      // Calculate stats - All invoices are treated as paid
+      // Calculate stats
       const totalRevenue = invoices.reduce((sum, invoice) => sum + (invoice.totalAmount || invoice.total || 0), 0);
       const paidAmount = totalRevenue; // All revenue is paid
 
-      // Calculate growth (simplified - comparing with previous period)
+      // Calculate growth
       const previousPeriodDate = new Date(filterDate);
       const periodDays = Math.floor((new Date() - filterDate) / (1000 * 60 * 60 * 24));
       previousPeriodDate.setDate(previousPeriodDate.getDate() - periodDays);
@@ -125,6 +149,10 @@ const Analytics = () => {
       const revenueGrowth = previousRevenue > 0 ? ((totalRevenue - previousRevenue) / previousRevenue) * 100 : 0;
       const invoiceGrowth = previousInvoices.length > 0 ? ((invoices.length - previousInvoices.length) / previousInvoices.length) * 100 : 0;
 
+      // Advanced Metrics
+      const averageOrderValue = invoices.length > 0 ? totalRevenue / invoices.length : 0;
+      const revenuePerCustomer = customers.length > 0 ? totalRevenue / customers.length : 0;
+
       setStats({
         totalRevenue,
         totalInvoices: invoices.length,
@@ -132,19 +160,63 @@ const Analytics = () => {
         totalProducts: products.length,
         paidAmount,
         revenueGrowth,
-        invoiceGrowth
+        invoiceGrowth,
+        averageOrderValue,
+        revenuePerCustomer
       });
+
+      // Prepare Chart Data
+      const chartData = processRevenueData(invoices);
+      setRevenueData(chartData);
+
+      // Prepare Category Data (Mocked for now as we don't have explicit categories in products yet, or derived from product names)
+      // For a real app, we'd aggregate by product category. Here we'll use top products as a proxy for "distribution"
+      const productDistribution = processProductDistribution(invoices);
+      setCategoryData(productDistribution);
+
     } catch (error) {
       console.error('Error fetching stats:', error);
     }
+  };
+
+  const processRevenueData = (invoices) => {
+    const dataMap = {};
+
+    invoices.forEach(invoice => {
+      const date = invoice.createdAt.toDate().toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      if (!dataMap[date]) {
+        dataMap[date] = { name: date, revenue: 0, invoices: 0 };
+      }
+      dataMap[date].revenue += (invoice.totalAmount || invoice.total || 0);
+      dataMap[date].invoices += 1;
+    });
+
+    return Object.values(dataMap);
+  };
+
+  const processProductDistribution = (invoices) => {
+    const productSales = {};
+    invoices.forEach(invoice => {
+      (invoice.items || invoice.products || []).forEach(item => {
+        const name = item.name;
+        if (!productSales[name]) {
+          productSales[name] = 0;
+        }
+        productSales[name] += item.total || (item.quantity * (item.price || 0));
+      });
+    });
+
+    return Object.entries(productSales)
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 5);
   };
 
   const fetchRecentActivity = async () => {
     try {
       const recentInvoicesQuery = query(
         collection(db, 'invoices'),
-        orderBy('createdAt', 'desc'),
-        // Firestore doesn't support limit in this context, so we'll slice later
+        orderBy('createdAt', 'desc')
       );
       const recentInvoicesSnapshot = await getDocs(recentInvoicesQuery);
       const recentInvoices = recentInvoicesSnapshot.docs
@@ -154,7 +226,7 @@ const Analytics = () => {
       const activity = recentInvoices.map(invoice => ({
         id: invoice.id,
         type: 'invoice',
-        action: `Invoice ${invoice.invoiceNumber} ${invoice.status}`,
+        action: `Invoice ${invoice.invoiceNumber} paid`,
         customer: invoice.customerName,
         amount: invoice.totalAmount || invoice.total,
         date: invoice.createdAt,
@@ -173,7 +245,7 @@ const Analytics = () => {
       const invoices = invoicesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
       const productSales = {};
-      
+
       invoices.forEach(invoice => {
         (invoice.items || invoice.products || []).forEach(item => {
           const productName = item.name;
@@ -205,7 +277,7 @@ const Analytics = () => {
       const invoices = invoicesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
       const customerStats = {};
-      
+
       invoices.forEach(invoice => {
         const customerName = invoice.customerName;
         if (!customerStats[customerName]) {
@@ -239,222 +311,363 @@ const Analytics = () => {
   const formatDate = (date) => {
     if (!date) return '-';
     const d = date.toDate ? date.toDate() : new Date(date);
-    return d.toLocaleDateString('en-US', { 
-      month: 'short', 
+    return d.toLocaleDateString('en-US', {
+      month: 'short',
       day: 'numeric',
       hour: '2-digit',
       minute: '2-digit'
     });
   };
 
-  const StatCard = ({ title, value, icon: Icon, change, color = 'blue', format = 'currency' }) => (
+  const exportData = () => {
+    const csvContent = "data:text/csv;charset=utf-8,"
+      + "Date,Revenue,Invoices\n"
+      + revenueData.map(row => `${row.name},${row.revenue},${row.invoices}`).join("\n");
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "analytics_data.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const StatCard = ({ title, value, icon: Icon, change, color = 'blue', format = 'currency', delay = 0 }) => (
     <motion.div
-      whileHover={{ scale: 1.02 }}
-      className="bg-white rounded-xl shadow-sm border border-gray-200 p-6"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, delay }}
+      whileHover={{ y: -5, transition: { duration: 0.2 } }}
+      className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 relative overflow-hidden group"
     >
-      <div className="flex items-center justify-between">
-        <div className="flex-1">
-          <p className="text-sm text-gray-600 mb-1">{title}</p>
-          <p className="text-2xl font-bold text-gray-900">
-            {format === 'currency' ? formatCurrency(value) : value.toLocaleString()}
-          </p>
+      <div className={`absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity duration-300`}>
+        <Icon className={`w-24 h-24 text-${color}-600 transform rotate-12 translate-x-4 -translate-y-4`} />
+      </div>
+
+      <div className="relative z-10">
+        <div className="flex items-center justify-between mb-4">
+          <div className={`p-3 rounded-xl bg-${color}-50 text-${color}-600`}>
+            <Icon className="w-6 h-6" />
+          </div>
           {change !== undefined && (
-            <div className="flex items-center mt-2">
-              {change >= 0 ? (
-                <TrendingUp className="w-4 h-4 text-green-500 mr-1" />
-              ) : (
-                <TrendingDown className="w-4 h-4 text-red-500 mr-1" />
-              )}
-              <span className={`text-sm font-medium ${change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                {Math.abs(change).toFixed(1)}%
-              </span>
+            <div className={`flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${change >= 0 ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
+              }`}>
+              {change >= 0 ? <TrendingUp className="w-3 h-3 mr-1" /> : <TrendingDown className="w-3 h-3 mr-1" />}
+              {Math.abs(change).toFixed(1)}%
             </div>
           )}
         </div>
-        <div className={`p-3 rounded-lg bg-${color}-100`}>
-          <Icon className={`w-6 h-6 text-${color}-600`} />
-        </div>
+
+        <p className="text-sm font-medium text-gray-500 mb-1">{title}</p>
+        <h3 className="text-3xl font-bold text-gray-900 tracking-tight">
+          {format === 'currency' ? formatCurrency(value) : value.toLocaleString()}
+        </h3>
       </div>
     </motion.div>
   );
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-2 text-gray-500">Loading analytics...</p>
-        </div>
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+          className="w-12 h-12 border-4 border-gray-200 border-t-blue-600 rounded-full"
+        />
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8 p-2 max-w-[1600px] mx-auto">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Analytics Dashboard</h1>
-          <p className="mt-2 text-gray-600">Track your business performance and insights</p>
-        </div>
-        <div className="mt-4 sm:mt-0">
-          <select
-            value={dateRange}
-            onChange={(e) => setDateRange(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          >
-            {dateRanges.map((range) => (
-              <option key={range.id} value={range.id}>{range.label}</option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      {/* Key Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard 
-          title="Total Revenue" 
-          value={stats.totalRevenue} 
-          icon={DollarSign} 
-          change={stats.revenueGrowth}
-          color="blue" 
-        />
-        <StatCard 
-          title="Total Invoices" 
-          value={stats.totalInvoices} 
-          icon={FileText} 
-          change={stats.invoiceGrowth}
-          color="green" 
-          format="number"
-        />
-        <StatCard 
-          title="Total Customers" 
-          value={stats.totalCustomers} 
-          icon={Users} 
-          color="purple" 
-          format="number"
-        />
-        <StatCard 
-          title="Total Products" 
-          value={stats.totalProducts} 
-          icon={Package} 
-          color="orange" 
-          format="number"
-        />
-      </div>
-
-      {/* Revenue Breakdown */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <motion.div
-          whileHover={{ scale: 1.01 }}
-          className="bg-white rounded-xl shadow-sm border border-gray-200 p-6"
-        >
-          <h3 className="text-lg font-semibold mb-4 flex items-center">
-            <DollarSign className="w-5 h-5 mr-2" />
-            Revenue Summary
-          </h3>
-          <div className="space-y-4">
-            <div>
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-sm text-gray-600">Total Paid Revenue</span>
-                <span className="text-sm font-medium text-green-600">{formatCurrency(stats.totalRevenue)}</span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-3">
-                <div 
-                  className="bg-green-500 h-3 rounded-full" 
-                  style={{ width: '100%' }}
-                />
-              </div>
-              <p className="text-xs text-gray-500 mt-1">All invoices are paid ({stats.totalInvoices} invoices)</p>
-            </div>
-            <div className="pt-4 border-t border-gray-200 text-center">
-              <div className="text-sm text-gray-600">Revenue Status</div>
-              <div className="text-2xl font-bold text-green-600 mt-1">100% Paid</div>
-              <p className="text-xs text-gray-500 mt-1">All {stats.totalInvoices} invoices are fully paid</p>
-            </div>
-          </div>
-        </motion.div>
-
-        <motion.div
-          whileHover={{ scale: 1.01 }}
-          className="bg-white rounded-xl shadow-sm border border-gray-200 p-6"
-        >
-          <h3 className="text-lg font-semibold mb-4 flex items-center">
-            <Package className="w-5 h-5 mr-2" />
-            Top Products
-          </h3>
-          <div className="space-y-3">
-            {topProducts.length > 0 ? topProducts.map((product, index) => (
-              <div key={index} className="flex justify-between items-center">
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900 truncate">{product.name}</p>
-                  <p className="text-xs text-gray-500">{product.quantity} units sold</p>
-                </div>
-                <span className="text-sm font-semibold text-gray-900">
-                  {formatCurrency(product.revenue)}
-                </span>
-              </div>
-            )) : (
-              <p className="text-sm text-gray-500 text-center py-4">No product data available</p>
-            )}
-          </div>
-        </motion.div>
-
-        <motion.div
-          whileHover={{ scale: 1.01 }}
-          className="bg-white rounded-xl shadow-sm border border-gray-200 p-6"
-        >
-          <h3 className="text-lg font-semibold mb-4 flex items-center">
-            <Users className="w-5 h-5 mr-2" />
-            Top Customers
-          </h3>
-          <div className="space-y-3">
-            {topCustomers.length > 0 ? topCustomers.map((customer, index) => (
-              <div key={index} className="flex justify-between items-center">
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900 truncate">{customer.name}</p>
-                  <p className="text-xs text-gray-500">{customer.invoiceCount} invoices</p>
-                </div>
-                <span className="text-sm font-semibold text-gray-900">
-                  {formatCurrency(customer.totalSpent)}
-                </span>
-              </div>
-            )) : (
-              <p className="text-sm text-gray-500 text-center py-4">No customer data available</p>
-            )}
-          </div>
-        </motion.div>
-      </div>
-
-      {/* Recent Activity */}
       <motion.div
-        whileHover={{ scale: 1.005 }}
-        className="bg-white rounded-xl shadow-sm border border-gray-200 p-6"
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex flex-col lg:flex-row lg:items-center justify-between gap-6"
       >
-        <h3 className="text-lg font-semibold mb-4 flex items-center">
-          <Activity className="w-5 h-5 mr-2" />
-          Recent Activity
-        </h3>
-        <div className="space-y-3">
-          {recentActivity.length > 0 ? recentActivity.map((activity) => (
-            <div key={activity.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-              <div className="flex items-center space-x-3">
-                <div className="w-2 h-2 rounded-full bg-green-500" />
-                <div>
-                  <p className="text-sm font-medium text-gray-900">{activity.action}</p>
-                  <p className="text-xs text-gray-500">{activity.customer}</p>
-                </div>
-              </div>
-              <div className="text-right">
-                <p className="text-sm font-semibold text-gray-900">{formatCurrency(activity.amount)}</p>
-                <p className="text-xs text-gray-500">{formatDate(activity.date)}</p>
-              </div>
-            </div>
-          )) : (
-            <p className="text-sm text-gray-500 text-center py-8">No recent activity</p>
-          )}
+        <div>
+          <h1 className="text-4xl font-black text-gray-900 tracking-tight mb-2">
+            Analytics Dashboard
+          </h1>
+          <p className="text-lg text-gray-500">
+            Real-time insights and performance metrics
+          </p>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-4">
+          <div className="relative">
+            <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+            <select
+              value={dateRange}
+              onChange={(e) => setDateRange(e.target.value)}
+              className="pl-10 pr-8 py-2.5 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none appearance-none text-sm font-medium text-gray-700 shadow-sm hover:border-gray-300 transition-colors cursor-pointer min-w-[160px]"
+            >
+              {dateRanges.map((range) => (
+                <option key={range.id} value={range.id}>{range.label}</option>
+              ))}
+            </select>
+          </div>
+
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={exportData}
+            className="flex items-center px-5 py-2.5 bg-gray-900 text-white rounded-xl font-medium hover:bg-gray-800 transition-colors shadow-lg shadow-gray-200"
+          >
+            <Download className="w-4 h-4 mr-2" />
+            Export Report
+          </motion.button>
         </div>
       </motion.div>
+
+      {/* Key Metrics Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <StatCard
+          title="Total Revenue"
+          value={stats.totalRevenue}
+          icon={DollarSign}
+          change={stats.revenueGrowth}
+          color="blue"
+          delay={0.1}
+        />
+        <StatCard
+          title="Total Invoices"
+          value={stats.totalInvoices}
+          icon={FileText}
+          change={stats.invoiceGrowth}
+          color="indigo"
+          format="number"
+          delay={0.2}
+        />
+        <StatCard
+          title="Avg. Order Value"
+          value={stats.averageOrderValue}
+          icon={BarChart3}
+          color="emerald"
+          delay={0.3}
+        />
+        <StatCard
+          title="Revenue / Customer"
+          value={stats.revenuePerCustomer}
+          icon={Users}
+          color="violet"
+          delay={0.4}
+        />
+      </div>
+
+      {/* Charts Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Main Revenue Chart */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
+          className="lg:col-span-2 bg-white rounded-3xl shadow-sm border border-gray-100 p-8"
+        >
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <h3 className="text-xl font-bold text-gray-900">Revenue Trend</h3>
+              <p className="text-sm text-gray-500 mt-1">Income over time</p>
+            </div>
+            <div className="flex items-center space-x-2">
+              <span className="flex items-center text-sm text-green-600 font-medium bg-green-50 px-3 py-1 rounded-full">
+                <TrendingUp className="w-3 h-3 mr-1" />
+                +12.5%
+              </span>
+            </div>
+          </div>
+
+          <div className="h-[350px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={revenueData}>
+                <defs>
+                  <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.1} />
+                    <stop offset="95%" stopColor="#3B82F6" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F3F4F6" />
+                <XAxis
+                  dataKey="name"
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: '#9CA3AF', fontSize: 12 }}
+                  dy={10}
+                />
+                <YAxis
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: '#9CA3AF', fontSize: 12 }}
+                  tickFormatter={(value) => `$${value / 1000}k`}
+                />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: '#fff',
+                    borderRadius: '12px',
+                    border: 'none',
+                    boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
+                  }}
+                  formatter={(value) => [formatCurrency(value), 'Revenue']}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="revenue"
+                  stroke="#3B82F6"
+                  strokeWidth={3}
+                  fillOpacity={1}
+                  fill="url(#colorRevenue)"
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </motion.div>
+
+        {/* Product Distribution */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.6 }}
+          className="bg-white rounded-3xl shadow-sm border border-gray-100 p-8"
+        >
+          <h3 className="text-xl font-bold text-gray-900 mb-1">Sales Distribution</h3>
+          <p className="text-sm text-gray-500 mb-8">Top products by revenue</p>
+
+          <div className="h-[300px] w-full relative">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={categoryData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={60}
+                  outerRadius={100}
+                  paddingAngle={5}
+                  dataKey="value"
+                >
+                  {categoryData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip
+                  formatter={(value) => formatCurrency(value)}
+                  contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+            {/* Center Text */}
+            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+              <span className="text-2xl font-bold text-gray-900">{categoryData.length}</span>
+              <span className="text-xs text-gray-500">Products</span>
+            </div>
+          </div>
+
+          <div className="mt-6 space-y-3">
+            {categoryData.slice(0, 3).map((item, index) => (
+              <div key={index} className="flex items-center justify-between text-sm">
+                <div className="flex items-center">
+                  <div className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: COLORS[index % COLORS.length] }} />
+                  <span className="text-gray-600 truncate max-w-[120px]">{item.name}</span>
+                </div>
+                <span className="font-medium text-gray-900">{formatCurrency(item.value)}</span>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+      </div>
+
+      {/* Bottom Grid: Top Products, Customers, Activity */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Top Products List */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.7 }}
+          className="bg-white rounded-3xl shadow-sm border border-gray-100 p-8"
+        >
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-xl font-bold text-gray-900">Top Products</h3>
+            <button className="text-sm text-blue-600 font-medium hover:text-blue-700">View All</button>
+          </div>
+          <div className="space-y-6">
+            {topProducts.map((product, index) => (
+              <div key={index} className="flex items-center">
+                <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center text-gray-500 font-bold text-sm mr-4">
+                  #{index + 1}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-bold text-gray-900 truncate">{product.name}</p>
+                  <p className="text-xs text-gray-500">{product.quantity} units sold</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm font-bold text-gray-900">{formatCurrency(product.revenue)}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+
+        {/* Top Customers List */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.8 }}
+          className="bg-white rounded-3xl shadow-sm border border-gray-100 p-8"
+        >
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-xl font-bold text-gray-900">Top Customers</h3>
+            <button className="text-sm text-blue-600 font-medium hover:text-blue-700">View All</button>
+          </div>
+          <div className="space-y-6">
+            {topCustomers.map((customer, index) => (
+              <div key={index} className="flex items-center">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-sm mr-4">
+                  {customer.name.charAt(0)}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-bold text-gray-900 truncate">{customer.name}</p>
+                  <p className="text-xs text-gray-500">{customer.invoiceCount} orders</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm font-bold text-gray-900">{formatCurrency(customer.totalSpent)}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+
+        {/* Recent Activity Feed */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.9 }}
+          className="bg-white rounded-3xl shadow-sm border border-gray-100 p-8"
+        >
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-xl font-bold text-gray-900">Recent Activity</h3>
+            <button className="text-sm text-blue-600 font-medium hover:text-blue-700">View All</button>
+          </div>
+          <div className="space-y-6 relative before:absolute before:left-[19px] before:top-2 before:bottom-2 before:w-[2px] before:bg-gray-100">
+            {recentActivity.map((activity, index) => (
+              <div key={activity.id} className="relative flex items-start pl-10">
+                <div className="absolute left-0 top-1 w-10 h-10 flex items-center justify-center">
+                  <div className="w-3 h-3 rounded-full bg-blue-500 ring-4 ring-white" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-gray-900">
+                    <span className="font-bold">{activity.customer}</span> paid invoice
+                  </p>
+                  <p className="text-xs text-gray-500 mt-0.5">{formatDate(activity.date)}</p>
+                </div>
+                <span className="text-sm font-bold text-green-600 bg-green-50 px-2 py-1 rounded-lg">
+                  +{formatCurrency(activity.amount)}
+                </span>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+      </div>
     </div>
   );
 };

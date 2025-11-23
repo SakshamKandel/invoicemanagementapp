@@ -30,6 +30,7 @@
     "react-dom": "^18.2.0",
     "react-hook-form": "^7.45.4",
     "react-router-dom": "^7.7.0",
+    "recharts": "^3.5.0",
     "stream-browserify": "^3.0.0",
     "util": "^0.12.5",
     "uuid": "^9.0.0"
