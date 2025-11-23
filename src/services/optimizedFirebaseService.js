@@ -1,11 +1,12 @@
-import { db } from '../firebase';
-import { 
-  collection, 
-  doc, 
-  setDoc, 
-  getDoc, 
-  getDocs, 
-  updateDoc, 
+import { db, storage } from '../firebase';
+import { ref, uploadBytes, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
+import {
+  collection,
+  doc,
+  setDoc,
+  getDoc,
+  getDocs,
+  updateDoc,
   deleteDoc,
   onSnapshot,
   writeBatch,
@@ -67,7 +68,7 @@ export const saveCartToFirebase = async (cartItems) => {
     // Only save if cart has actually changed
     const cacheKey = 'user-cart';
     const cachedCart = cache.get(cacheKey);
-    
+
     if (cachedCart && JSON.stringify(cachedCart) === JSON.stringify(cartItems)) {
       console.log('Cart unchanged, skipping write');
       return;
@@ -80,7 +81,7 @@ export const saveCartToFirebase = async (cartItems) => {
       itemCount: cartItems.length,
       totalValue: cartItems.reduce((sum, item) => sum + ((item.customPrice || item.pricePerCase) * item.quantity), 0)
     };
-    
+
     await setDoc(cartRef, cartData);
     cache.set(cacheKey, cartItems);
     console.log('Cart saved to Firebase (optimized)');
@@ -100,7 +101,7 @@ export const loadCartFromFirebase = async () => {
 
     const cartRef = doc(db, CART_COLLECTION, 'user-cart');
     const cartSnap = await getDoc(cartRef);
-    
+
     if (cartSnap.exists()) {
       const data = cartSnap.data();
       const items = data.items || [];
@@ -137,7 +138,7 @@ export const clearCartInFirebase = async () => {
 export const saveProductsToFirebase = async (products, shouldClearFirst = false) => {
   try {
     const batch = writeBatch(db);
-    
+
     if (shouldClearFirst) {
       // More efficient: only delete what needs to be deleted
       const existingProducts = await getDocs(collection(db, PRODUCTS_COLLECTION));
@@ -145,7 +146,7 @@ export const saveProductsToFirebase = async (products, shouldClearFirst = false)
         batch.delete(docSnapshot.ref);
       });
     }
-    
+
     // Optimize product data structure
     products.forEach((product) => {
       const productRef = doc(db, PRODUCTS_COLLECTION, product.id.toString());
@@ -162,10 +163,10 @@ export const saveProductsToFirebase = async (products, shouldClearFirst = false)
         description: product.description,
         updatedAt: serverTimestamp()
       };
-      
+
       batch.set(productRef, optimizedProduct);
     });
-    
+
     await batch.commit();
     cache.invalidate('products');
     console.log('Products saved to Firebase (batch optimized):', products.length, 'products');
@@ -185,19 +186,19 @@ export const loadProductsFromFirebase = async () => {
 
     const productsRef = collection(db, PRODUCTS_COLLECTION);
     const productsSnap = await getDocs(productsRef);
-    
+
     if (!productsSnap.empty) {
       const products = productsSnap.docs.map(doc => ({
         ...doc.data(),
         id: parseInt(doc.id)
       }));
-      
-      const uniqueProducts = products.filter((product, index, self) => 
+
+      const uniqueProducts = products.filter((product, index, self) =>
         index === self.findIndex(p => p.id === product.id)
       );
-      
+
       uniqueProducts.sort((a, b) => a.id - b.id);
-      
+
       cache.set(cacheKey, uniqueProducts);
       console.log('Products loaded from Firebase:', uniqueProducts.length, 'products');
       return uniqueProducts;
@@ -215,23 +216,23 @@ export const loadProductsFromFirebase = async () => {
 export const updateProductStockInFirebase = async (productId, available) => {
   try {
     const productRef = doc(db, PRODUCTS_COLLECTION, productId.toString());
-    
+
     // Only update the fields that changed
     await updateDoc(productRef, {
       available: available,
       updatedAt: serverTimestamp()
     });
-    
+
     // Update cache
     const cacheKey = 'products';
     const cachedProducts = cache.get(cacheKey);
     if (cachedProducts) {
-      const updatedProducts = cachedProducts.map(p => 
+      const updatedProducts = cachedProducts.map(p =>
         p.id === productId ? { ...p, available } : p
       );
       cache.set(cacheKey, updatedProducts);
     }
-    
+
     console.log(`Product ${productId} stock updated (optimized)`);
     return true;
   } catch (error) {
@@ -240,11 +241,97 @@ export const updateProductStockInFirebase = async (productId, available) => {
   }
 };
 
+// Optimized single product addition
+export const addProductToFirebase = async (productData) => {
+  try {
+    // Generate a unique ID if not provided
+    const productId = productData.id || Date.now();
+    const productRef = doc(db, PRODUCTS_COLLECTION, productId.toString());
+
+    const newProduct = {
+      ...productData,
+      id: productId,
+      updatedAt: serverTimestamp(),
+      createdAt: serverTimestamp()
+    };
+
+    await setDoc(productRef, newProduct);
+
+    // Invalidate cache so next load fetches this new product
+    cache.invalidate('products');
+
+    console.log('Product added to Firebase (optimized):', newProduct.name);
+    return newProduct;
+  } catch (error) {
+    console.error('Error adding product to Firebase:', error);
+    throw error;
+  }
+};
+
+// Optimized single product deletion
+export const deleteProductFromFirebase = async (productId) => {
+  try {
+    const productRef = doc(db, PRODUCTS_COLLECTION, productId.toString());
+    await deleteDoc(productRef);
+
+    // Invalidate cache so next load reflects the deletion
+    cache.invalidate('products');
+
+    console.log(`Product ${productId} deleted from Firebase (optimized)`);
+    return true;
+  } catch (error) {
+    console.error('Error deleting product from Firebase:', error);
+    throw error;
+  }
+};
+
+// Upload product image
+export const uploadProductImage = async (file) => {
+  try {
+    const storageRef = ref(storage, `product-images/${Date.now()}_${file.name}`);
+    // Use uploadBytesResumable for better error handling and potential resumability
+    const uploadTask = uploadBytesResumable(storageRef, file);
+
+    return new Promise((resolve, reject) => {
+      uploadTask.on('state_changed',
+        (snapshot) => {
+          // Observe state change events such as progress, pause, and resume
+          const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+          console.log('Upload is ' + progress + '% done');
+        },
+        (error) => {
+          // Handle unsuccessful uploads
+          console.error('Error uploading image (detailed):', error);
+          console.error('Error code:', error.code);
+          console.error('Error message:', error.message);
+          if (error.serverResponse) {
+            console.error('Server Response:', error.serverResponse);
+          }
+          reject(error);
+        },
+        async () => {
+          // Handle successful uploads on complete
+          try {
+            const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+            resolve(downloadURL);
+          } catch (urlError) {
+            console.error('Error getting download URL:', urlError);
+            reject(urlError);
+          }
+        }
+      );
+    });
+  } catch (error) {
+    console.error('Error initiating upload:', error);
+    throw error;
+  }
+};
+
 // Optimized Customer Management
 export const saveCustomerOptimized = async (customerData, customerId = null) => {
   try {
     const timestamp = serverTimestamp();
-    
+
     if (customerId) {
       // Update existing customer - only update changed fields
       const customerRef = doc(db, CUSTOMERS_COLLECTION, customerId);
@@ -262,7 +349,7 @@ export const saveCustomerOptimized = async (customerData, customerId = null) => 
       });
       customerId = customerRef.id;
     }
-    
+
     cache.invalidate('customers');
     return customerId;
   } catch (error) {
@@ -316,7 +403,7 @@ export const loadCustomersPaginated = async (pageSize = 20, lastDoc = null) => {
 export const saveInvoiceOptimized = async (invoiceData) => {
   try {
     const invoiceRef = doc(collection(db, INVOICES_COLLECTION));
-    
+
     // Optimize invoice data structure
     const optimizedInvoice = {
       ...invoiceData,
@@ -334,7 +421,7 @@ export const saveInvoiceOptimized = async (invoiceData) => {
 
     await setDoc(invoiceRef, optimizedInvoice);
     cache.invalidate('invoices');
-    
+
     console.log('Invoice saved (optimized)');
     return invoiceRef;
   } catch (error) {
@@ -348,7 +435,7 @@ export const loadInvoicesOptimized = async (filters = {}, pageSize = 10, lastDoc
   try {
     const { status, year, month, searchTerm } = filters;
     const cacheKey = `invoices-${JSON.stringify(filters)}-${lastDoc?.id || 'first'}`;
-    
+
     const cached = cache.get(cacheKey);
     if (cached) {
       console.log('Invoices loaded from cache');
@@ -365,11 +452,11 @@ export const loadInvoicesOptimized = async (filters = {}, pageSize = 10, lastDoc
     if (status && status !== 'all') {
       q = query(q, where('status', '==', status));
     }
-    
+
     if (year) {
       q = query(q, where('year', '==', year));
     }
-    
+
     if (month !== undefined) {
       q = query(q, where('month', '==', month));
     }
@@ -413,7 +500,7 @@ export const batchUpdateInvoiceStatus = async (invoiceIds, newStatus) => {
   try {
     const batch = writeBatch(db);
     const timestamp = serverTimestamp();
-    
+
     invoiceIds.forEach(invoiceId => {
       const invoiceRef = doc(db, INVOICES_COLLECTION, invoiceId);
       batch.update(invoiceRef, {
@@ -421,7 +508,7 @@ export const batchUpdateInvoiceStatus = async (invoiceIds, newStatus) => {
         updatedAt: timestamp
       });
     });
-    
+
     await batch.commit();
     cache.clear(); // Clear all cache after batch operations
     console.log(`Batch updated ${invoiceIds.length} invoices`);
@@ -437,24 +524,24 @@ const activeListeners = new Map();
 export const subscribeToCollectionOptimized = (collectionName, callback, options = {}) => {
   const { filters = {}, debounceMs = 1000 } = options;
   const listenerKey = `${collectionName}-${JSON.stringify(filters)}`;
-  
+
   // Reuse existing listener if same parameters
   if (activeListeners.has(listenerKey)) {
     console.log('Reusing existing listener for', listenerKey);
     return activeListeners.get(listenerKey);
   }
-  
+
   let q = collection(db, collectionName);
-  
+
   // Apply filters to reduce data transfer
   if (filters.status) {
     q = query(q, where('status', '==', filters.status));
   }
-  
+
   if (filters.limit) {
     q = query(q, limit(filters.limit));
   }
-  
+
   // Debounce callback to reduce UI updates
   let debounceTimer;
   const debouncedCallback = (snapshot) => {
@@ -467,17 +554,17 @@ export const subscribeToCollectionOptimized = (collectionName, callback, options
       callback(data);
     }, debounceMs);
   };
-  
+
   const unsubscribe = onSnapshot(q, debouncedCallback, (error) => {
     console.error(`Error in ${collectionName} listener:`, error);
   });
-  
+
   const wrappedUnsubscribe = () => {
     activeListeners.delete(listenerKey);
     clearTimeout(debounceTimer);
     unsubscribe();
   };
-  
+
   activeListeners.set(listenerKey, wrappedUnsubscribe);
   return wrappedUnsubscribe;
 };

@@ -1,31 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Plus, 
-  Search, 
-  Edit3, 
-  Trash2, 
-  Phone, 
-  Mail, 
-  MapPin, 
-  Building, 
+import {
+  Plus,
+  Search,
+  Edit3,
+  Trash2,
+  Phone,
+  Mail,
+  MapPin,
+  Building,
   User,
   Filter,
   Download,
   X,
-  DollarSign,
-  Calendar,
   AlertCircle,
-  Star,
-  Heart,
-  Award
+  ArrowRight,
+  DollarSign,
+  Check
 } from 'lucide-react';
 import { collection, addDoc, getDocs, updateDoc, deleteDoc, doc, query, orderBy } from 'firebase/firestore';
 import { db } from '../firebase';
-import { 
-  saveCustomerOptimized, 
+import {
+  saveCustomerOptimized,
   loadCustomersPaginated,
-  clearAllCaches 
 } from '../services/optimizedFirebaseService';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -69,7 +66,6 @@ const CustomerManagement = () => {
     { id: 'other', label: 'Other' }
   ];
 
-
   useEffect(() => {
     fetchCustomers();
   }, []);
@@ -81,25 +77,21 @@ const CustomerManagement = () => {
   const fetchCustomers = async (loadMore = false) => {
     try {
       setLoading(true);
-      
-      // Use optimized paginated loading for better performance
       const result = await loadCustomersPaginated(20, loadMore ? lastDoc : null);
-      
+
       if (loadMore) {
         setCustomers(prev => [...prev, ...result.customers]);
       } else {
         setCustomers(result.customers);
         setLastDoc(null);
       }
-      
+
       setHasMore(result.hasMore);
       setLastDoc(result.lastDoc);
-      
+
     } catch (error) {
       console.error('Error fetching customers:', error);
       setError('Failed to fetch customers');
-      
-      // Fallback to original method if optimized fails
       try {
         const q = query(collection(db, 'customers'), orderBy('createdAt', 'desc'));
         const querySnapshot = await getDocs(q);
@@ -168,8 +160,6 @@ const CustomerManagement = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    // Validation
     if (!formData.businessName?.trim() || !formData.contactPerson?.trim() || !formData.email?.trim() || !formData.permitNumber?.trim()) {
       setError('Please fill in all required fields: Business Name, Contact Person, Email, and Permit Number');
       return;
@@ -177,20 +167,17 @@ const CustomerManagement = () => {
 
     setLoading(true);
     setError('');
-    
+
     try {
       const customerData = {
         ...formData,
         createdBy: currentUser?.uid || 'unknown'
       };
 
-      // Try optimized save first
       try {
         await saveCustomerOptimized(customerData, selectedCustomer?.id);
       } catch (optimizedError) {
         console.warn('Optimized save failed, using fallback:', optimizedError);
-        
-        // Fallback to original method
         if (selectedCustomer) {
           await updateDoc(doc(db, 'customers', selectedCustomer.id), {
             ...customerData,
@@ -203,7 +190,7 @@ const CustomerManagement = () => {
           });
         }
       }
-      
+
       await fetchCustomers();
       handleCloseModal();
     } catch (error) {
@@ -225,7 +212,7 @@ const CustomerManagement = () => {
       }
     }
   };
-  
+
   const exportCustomers = () => {
     const csvContent = [
       ['Business Name', 'Contact Person', 'Email', 'Phone', 'Business Type', 'City', 'State'].join(','),
@@ -243,616 +230,429 @@ const CustomerManagement = () => {
     URL.revokeObjectURL(url);
   };
 
-  const CustomerCard = React.forwardRef(({ customer }, ref) => {
-    const getBusinessIcon = (type) => {
-      const icons = {
-        restaurant: '🍽️',
-        bar: '🍺',
-        retail: '🏪',
-        distributor: '🚚',
-        hotel: '🏨',
-        other: '🏢'
-      };
-      return icons[type] || icons.other;
-    };
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.05
+      }
+    }
+  };
 
-    const getInitials = (name) => {
-      return name?.split(' ').map(word => word[0]).join('').toUpperCase() || '??';
-    };
-
-    return (
-      <motion.div
-        ref={ref}
-        layout
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -20 }}
-        whileHover={{ y: -4, boxShadow: "0 20px 40px -12px rgba(0, 0, 0, 0.15)" }}
-        className="group bg-white rounded-3xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 cursor-pointer relative"
-      >
-        {/* Airbnb-style Header with Solid Red */}
-        <div className="relative h-32 bg-red-500">
-          <div className="absolute top-4 right-4">
-            <div className="px-3 py-1 bg-white/90 backdrop-blur-sm rounded-full text-xs font-semibold text-gray-700 border border-white/20">
-              {customer.businessType?.charAt(0).toUpperCase() + customer.businessType?.slice(1)}
-            </div>
-          </div>
-          
-          {/* Profile Avatar positioned to overlap */}
-          <div className="absolute -bottom-8 left-6">
-            <div className="w-16 h-16 bg-white rounded-full shadow-lg flex items-center justify-center border-4 border-white">
-              <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
-                <span className="text-lg font-bold text-gray-600">
-                  {getInitials(customer.businessName)}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Content */}
-        <div className="pt-12 px-6 pb-6">
-          {/* Business Name and Contact Person */}
-          <div className="mb-4">
-            <h3 className="text-xl font-bold text-gray-900 mb-1 line-clamp-1">
-              {customer.businessName}
-            </h3>
-            <p className="text-gray-600 flex items-center gap-2">
-              <User className="w-4 h-4" />
-              {customer.contactPerson}
-            </p>
-          </div>
-
-          {/* Contact Details with Airbnb styling */}
-          <div className="space-y-3 mb-6">
-            <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
-              <div className="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
-                <Mail className="w-4 h-4 text-red-600" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-900">Email</p>
-                <p className="text-sm text-gray-600 truncate">{customer.email}</p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
-              <div className="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
-                <Phone className="w-4 h-4 text-red-600" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-900">Phone</p>
-                <p className="text-sm text-gray-600">{customer.phone}</p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
-              <div className="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
-                <MapPin className="w-4 h-4 text-red-600" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-900">Location</p>
-                <p className="text-sm text-gray-600">{customer.address || `${customer.city}, ${customer.state}`}</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Business Type Badge */}
-          <div className="mb-6">
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-red-50 rounded-full border border-red-200">
-              <span className="text-lg">{getBusinessIcon(customer.businessType)}</span>
-              <span className="text-sm font-medium text-red-700">{customer.businessType}</span>
-            </div>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="flex gap-2">
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                handleEdit(customer);
-              }}
-              className="flex-1 bg-gray-900 text-white px-4 py-3 rounded-xl font-medium hover:bg-gray-800 transition-colors duration-200 flex items-center justify-center gap-2"
-            >
-              <Edit3 className="w-4 h-4" />
-              Edit
-            </button>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                handleDelete(customer.id);
-              }}
-              className="px-4 py-3 bg-red-50 text-red-600 rounded-xl hover:bg-red-100 transition-colors duration-200 flex items-center justify-center"
-            >
-              <Trash2 className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-      </motion.div>
-    );
-  });
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 50 } }
+  };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Hero Header Section */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="py-8">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between">
-              <div className="flex-1">
-                <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2">
-                  Customer Management
-                </h1>
-                <p className="text-lg text-gray-600 mb-4">
-                </p>
-                <div className="flex flex-wrap items-center gap-6 text-sm text-gray-500">
-                  <div className="flex items-center">
-                    <div className="w-2 h-2 bg-red-400 rounded-full mr-2"></div>
-                    <span className="font-medium">{customers.length} Total Customers</span>
-                  </div>
-                  <div className="flex items-center">
-                    <div className="w-2 h-2 bg-red-400 rounded-full mr-2"></div>
-                    <span className="font-medium">{filteredCustomers.length} Currently Showing</span>
-                  </div>
-                  <div className="flex items-center">
-                    <div className="w-2 h-2 bg-red-400 rounded-full mr-2"></div>
-                    <span className="font-medium">
-                      {Array.from(new Set(customers.map(c => c.businessType))).length} Business Types
-                    </span>
-                  </div>
-                </div>
+    <div className="min-h-screen bg-white font-sans text-black">
+      {/* Editorial Header */}
+      <div className="border-b-4 border-brand-600 bg-white sticky top-0 z-30">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+            <div>
+              <h1 className="text-4xl md:text-5xl font-black uppercase tracking-tighter mb-2">
+                Customer<br />Directory
+              </h1>
+              <div className="flex flex-wrap items-center gap-4 text-sm font-mono uppercase tracking-widest text-gray-500">
+                <span>{customers.length} Records</span>
+                <span className="w-1 h-1 bg-brand-600 rounded-full"></span>
+                <span>Global Distribution</span>
               </div>
-              <div className="mt-6 md:mt-0 flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+            </div>
+
+            <div className="flex flex-wrap items-center gap-4">
+              <button
+                onClick={exportCustomers}
+                className="px-6 py-3 border-2 border-gray-200 hover:border-brand-600 hover:text-brand-600 text-black font-bold uppercase tracking-widest text-xs transition-all"
+              >
+                Export Data
+              </button>
+              <button
+                onClick={() => handleOpenModal()}
+                className="px-6 py-3 bg-brand-600 text-white font-bold uppercase tracking-widest text-xs hover:bg-black transition-colors shadow-sharp-red hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px]"
+              >
+                <span className="flex items-center gap-2">
+                  <Plus className="w-4 h-4" />
+                  New Client
+                </span>
+              </button>
+            </div>
+          </div>
+
+          {/* Search & Filter Bar */}
+          <div className="mt-8 flex flex-col md:flex-row gap-4 items-center border-t border-gray-100 pt-6">
+            <div className="relative flex-1 w-full">
+              <Search className="absolute left-0 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="SEARCH DATABASE..."
+                className="w-full pl-8 pr-4 py-2 bg-transparent border-none text-xl font-bold uppercase placeholder-gray-300 focus:ring-0 focus:placeholder-gray-200 transition-all"
+              />
+            </div>
+
+            <div className="flex items-center gap-4 w-full md:w-auto overflow-x-auto pb-2 md:pb-0">
+              <Filter className="w-4 h-4 text-gray-400" />
+              <div className="flex gap-2">
                 <button
-                  onClick={exportCustomers}
-                  className="flex items-center justify-center space-x-2 px-4 sm:px-6 py-3 bg-white border-2 border-gray-300 text-gray-700 rounded-xl hover:border-red-300 hover:bg-red-50 transition-all duration-200 font-medium text-sm sm:text-base"
+                  onClick={() => setSelectedFilter('all')}
+                  className={`px-3 py-1 text-xs font-bold uppercase tracking-widest transition-colors ${selectedFilter === 'all' ? 'bg-brand-600 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
                 >
-                  <Download className="w-4 h-4 sm:w-5 sm:h-5" />
-                  <span>Export Data</span>
+                  All
                 </button>
-                <button
-                  onClick={() => handleOpenModal()}
-                  className="flex items-center justify-center space-x-2 px-4 sm:px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl transition-all duration-200 font-medium shadow-lg hover:shadow-xl text-sm sm:text-base"
-                >
-                  <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
-                  <span>Add Customer</span>
-                </button>
+                {businessTypes.map(type => (
+                  <button
+                    key={type.id}
+                    onClick={() => setSelectedFilter(type.id)}
+                    className={`px-3 py-1 text-xs font-bold uppercase tracking-widest transition-colors ${selectedFilter === type.id ? 'bg-brand-600 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
+                  >
+                    {type.label}
+                  </button>
+                ))}
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Search and Filter Bar */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="py-4">
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-              {/* Search */}
-              <div className="flex-1 max-w-md">
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                    <Search className="h-5 w-5 text-gray-400" />
-                  </div>
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search customers, contacts, or businesses..."
-                    className="block w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200 text-gray-900 placeholder-gray-500"
-                  />
-                </div>
-              </div>
-
-              {/* Filters */}
-              <div className="flex items-center space-x-4">
-                <div className="flex items-center space-x-2">
-                  <Filter className="w-5 h-5 text-gray-500" />
-                  <span className="text-sm font-medium text-gray-700 hidden sm:block">Filter by type:</span>
-                </div>
-                <select
-                  value={selectedFilter}
-                  onChange={(e) => setSelectedFilter(e.target.value)}
-                  className="px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent font-medium bg-white min-w-[140px]"
-                >
-                  <option value="all">All Types</option>
-                  {businessTypes.map((type) => (
-                    <option key={type.id} value={type.id}>{type.label}</option>
-                  ))}
-                </select>
-                
-                {/* Filter indicator */}
-                {(searchQuery || selectedFilter !== 'all') && (
-                  <div className="flex items-center space-x-2">
-                    <span className="text-sm text-gray-500">Active filters:</span>
-                    <div className="flex space-x-2">
-                      {searchQuery && (
-                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                          Search: "{searchQuery}"
-                        </span>
-                      )}
-                      {selectedFilter !== 'all' && (
-                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                          Type: {businessTypes.find(t => t.id === selectedFilter)?.label}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {loading ? (
-          <div className="flex flex-col items-center justify-center py-20">
-            <div className="animate-spin rounded-full h-12 w-12 border-2 border-red-600 border-t-transparent mb-4"></div>
-            <p className="text-gray-600">Loading customers...</p>
-          </div>
-        ) : filteredCustomers.length === 0 ? (
-          <div className="text-center py-20">
-            <div className="w-24 h-24 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
-              <User className="w-12 h-12 text-red-500" />
-            </div>
-            <h3 className="text-2xl font-bold text-gray-900 mb-2">
-              {searchQuery || selectedFilter !== 'all' ? 'No customers found' : 'No customers yet'}
-            </h3>
-            <p className="text-gray-500 mb-8 max-w-md mx-auto">
-              {searchQuery || selectedFilter !== 'all'
-                ? 'Try adjusting your search terms or filters to find what you\'re looking for.'
-                : 'Get started by adding your first customer to begin building your business relationships.'}
-            </p>
-            <button
-              onClick={() => handleOpenModal()}
-              className="inline-flex items-center justify-center space-x-2 px-4 sm:px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl transition-all duration-200 font-medium shadow-lg hover:shadow-xl text-sm sm:text-base w-full sm:w-auto max-w-sm mx-auto"
-            >
-              <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
-              <span>Add Your First Customer</span>
-            </button>
+      {/* Fluid List Content */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        {loading && customers.length === 0 ? (
+          <div className="flex justify-center py-20">
+            <div className="animate-spin w-8 h-8 border-4 border-black border-t-transparent rounded-full"></div>
           </div>
         ) : (
-          <div className="space-y-8">
-            {/* Results header */}
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-xl font-semibold text-gray-900">
-                  {filteredCustomers.length} {filteredCustomers.length === 1 ? 'Customer' : 'Customers'}
-                </h2>
-                <p className="text-gray-600 mt-1">
-                  {searchQuery || selectedFilter !== 'all' 
-                    ? 'Based on your current filters' 
-                    : 'All your registered customers'}
-                </p>
-              </div>
-              
-              {/* View options could go here in the future */}
-              <div className="hidden sm:flex items-center space-x-2">
-                <span className="text-sm text-gray-500">View:</span>
-                <button className="p-2 bg-red-600 text-white rounded-lg">
-                  <Building className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-
-            {/* Customer Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-              <AnimatePresence mode="popLayout">
-                {filteredCustomers.map((customer) => (
-                  <CustomerCard key={customer.id} customer={customer} />
-                ))}
-              </AnimatePresence>
-            </div>
-            
-            {/* Load More Button */}
-            {hasMore && filteredCustomers.length >= 20 && (
-              <div className="mt-8 text-center">
-                <button
-                  onClick={() => fetchCustomers(true)}
-                  disabled={loading}
-                  className="px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl"
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            animate="show"
+            className="space-y-2"
+          >
+            <AnimatePresence mode="popLayout">
+              {filteredCustomers.map((customer) => (
+                <motion.div
+                  key={customer.id}
+                  variants={itemVariants}
+                  layout
+                  className="group relative bg-white border-b border-gray-100 hover:bg-gray-50 transition-colors duration-300"
                 >
-                  {loading ? 'Loading...' : 'Load More Customers'}
-                </button>
-              </div>
-            )}
+                  <div className="p-4 md:p-6 flex flex-col md:flex-row items-start md:items-center gap-6">
+                    {/* Avatar / Initials */}
+                    <div className="w-12 h-12 bg-black text-white flex items-center justify-center font-black text-xl flex-shrink-0">
+                      {customer.businessName.substring(0, 2).toUpperCase()}
+                    </div>
+
+                    {/* Main Info */}
+                    <div className="flex-1 min-w-0 w-full">
+                      <div className="flex flex-wrap items-center gap-3 mb-1">
+                        <h3 className="text-xl font-bold text-black uppercase tracking-tight truncate max-w-full">
+                          {customer.businessName}
+                        </h3>
+                        <span className="px-2 py-0.5 bg-brand-50 text-brand-600 text-[10px] font-bold uppercase tracking-widest border border-brand-100 whitespace-nowrap">
+                          {customer.businessType}
+                        </span>
+                      </div>
+                      <div className="flex flex-wrap gap-4 text-sm text-gray-500 font-medium">
+                        <span className="flex items-center gap-1">
+                          <User className="w-3 h-3" /> {customer.contactPerson}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <MapPin className="w-3 h-3" /> {customer.city}, {customer.state}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Contact Info (Hidden on mobile, visible on hover/desktop) */}
+                    <div className="hidden md:flex flex-col items-end gap-1 text-sm text-gray-400 font-mono">
+                      <span className="flex items-center gap-2">
+                        {customer.email} <Mail className="w-3 h-3" />
+                      </span>
+                      <span className="flex items-center gap-2">
+                        {customer.phone} <Phone className="w-3 h-3" />
+                      </span>
+                    </div>
+
+                    {/* Actions (Always visible on mobile, slide in on hover desktop) */}
+                    <div className="flex items-center gap-2 mt-4 md:mt-0 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-200 md:transform md:translate-x-4 md:group-hover:translate-x-0">
+                      <button
+                        onClick={() => handleEdit(customer)}
+                        className="p-2 bg-gray-100 md:bg-transparent hover:bg-black hover:text-white transition-colors rounded md:rounded-none"
+                      >
+                        <Edit3 className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(customer.id)}
+                        className="p-2 bg-gray-100 md:bg-transparent hover:bg-brand-600 hover:text-white transition-colors rounded md:rounded-none"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                      <div className="hidden md:block w-px h-4 bg-gray-200 mx-2"></div>
+                      <ArrowRight className="hidden md:block w-4 h-4 text-gray-300 group-hover:text-black" />
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </motion.div>
+        )}
+
+        {hasMore && filteredCustomers.length >= 20 && (
+          <div className="mt-12 text-center">
+            <button
+              onClick={() => fetchCustomers(true)}
+              className="text-sm font-bold uppercase tracking-widest border-b-2 border-black pb-1 hover:text-brand-600 hover:border-brand-600 transition-colors"
+            >
+              Load More Records
+            </button>
           </div>
         )}
       </div>
 
-      {/* Modal */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-start sm:items-center justify-center p-2 sm:p-4 pt-4 sm:pt-4">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="bg-white rounded-xl sm:rounded-3xl shadow-2xl max-w-4xl w-full h-[92vh] sm:max-h-[90vh] overflow-hidden mx-2 sm:mx-0 flex flex-col"
-          >
-            {/* Modal Header */}
-            <div className="bg-red-500 px-4 sm:px-8 py-4 sm:py-6 text-white flex-shrink-0">
-              <div className="flex justify-between items-center">
-                <div className="min-w-0 flex-1 pr-4">
-                  <h2 className="text-lg sm:text-2xl font-bold truncate">
-                    {selectedCustomer ? 'Edit Customer Details' : 'Add New Customer'}
+      {/* Editorial Modal */}
+      <AnimatePresence>
+        {isModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={handleCloseModal}
+              className="absolute inset-0 bg-white/90 backdrop-blur-xl"
+            />
+
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative w-full max-w-4xl bg-white border-4 border-brand-600 shadow-2xl max-h-[90vh] overflow-hidden flex flex-col md:flex-row"
+            >
+              {/* Left Sidebar - Context */}
+              <div className="hidden md:flex w-1/3 bg-brand-600 text-white p-8 flex-col justify-between relative overflow-hidden">
+                <div className="relative z-10">
+                  <div className="w-12 h-12 bg-white text-brand-600 flex items-center justify-center font-black text-xl mb-6">
+                    {selectedCustomer ? selectedCustomer.businessName.substring(0, 2).toUpperCase() : <Plus className="w-6 h-6" />}
+                  </div>
+                  <h2 className="text-4xl font-black uppercase tracking-tighter mb-2 leading-none">
+                    {selectedCustomer ? 'Edit\nProfile' : 'New\nClient'}
                   </h2>
-                  <p className="text-red-100 mt-1 text-sm sm:text-base hidden sm:block">
-                    {selectedCustomer ? 'Update customer information and business details' : 'Enter customer information to get started'}
+                  <p className="text-brand-100 font-mono text-xs uppercase tracking-widest mt-4">
+                    {selectedCustomer ? `ID: ${selectedCustomer.id}` : 'Create Record'}
                   </p>
                 </div>
-                <button
-                  onClick={handleCloseModal}
-                  className="p-2 hover:bg-white/20 rounded-full transition-colors flex-shrink-0"
-                >
-                  <X className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
-                </button>
+
+                <div className="relative z-10 space-y-6">
+                  <div>
+                    <h4 className="text-xs font-bold uppercase tracking-widest text-brand-200 mb-1">Required</h4>
+                    <ul className="text-sm space-y-1">
+                      <li className="flex items-center gap-2"><div className="w-1 h-1 bg-white rounded-full"></div> Business Name</li>
+                      <li className="flex items-center gap-2"><div className="w-1 h-1 bg-white rounded-full"></div> Contact Person</li>
+                      <li className="flex items-center gap-2"><div className="w-1 h-1 bg-white rounded-full"></div> Email Address</li>
+                      <li className="flex items-center gap-2"><div className="w-1 h-1 bg-white rounded-full"></div> Permit Number</li>
+                    </ul>
+                  </div>
+                  <p className="text-[10px] text-brand-200 leading-relaxed">
+                    Ensure all tax and permit information is verified before saving.
+                  </p>
+                </div>
+
+                {/* Background Pattern */}
+                <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none">
+                  <div className="absolute bottom-[-20%] right-[-20%] w-[150%] h-[150%] border-[40px] border-white rounded-full"></div>
+                </div>
               </div>
-            </div>
-            
-            {/* Modal Content */}
-            <div className="flex-1 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 220px)' }}>
-              {error && (
-                <div className="mx-4 sm:mx-8 mt-4 sm:mt-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl">
-                  <div className="flex items-center">
-                    <AlertCircle className="w-5 h-5 mr-2" />
-                    <span className="text-sm sm:text-base">{error}</span>
-                  </div>
-                </div>
-              )}
-              
-              <form onSubmit={handleSubmit} className="p-4 sm:p-8 space-y-4 sm:space-y-6">
-                {/* Basic Information */}
-                <div className="space-y-4 sm:space-y-6">
-                  <div className="border-l-4 border-red-500 pl-4">
-                    <h3 className="text-lg font-semibold text-gray-900">Basic Information</h3>
-                    <p className="text-sm text-gray-600 mt-1">Essential details about the customer and business</p>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-                    <div className="space-y-2">
-                      <label className="text-sm font-semibold text-gray-700 flex items-center">
-                        Business Name
-                        <span className="text-red-500 ml-1">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        value={formData.businessName}
-                        onChange={(e) => handleInputChange('businessName', e.target.value)}
-                        required
-                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200"
-                        placeholder="e.g., Mountain View Restaurant"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-semibold text-gray-700 flex items-center">
-                        Contact Person
-                        <span className="text-red-500 ml-1">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        value={formData.contactPerson}
-                        onChange={(e) => handleInputChange('contactPerson', e.target.value)}
-                        required
-                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200"
-                        placeholder="e.g., John Smith"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-semibold text-gray-700 flex items-center">
-                        Email Address
-                        <span className="text-red-500 ml-1">*</span>
-                      </label>
-                      <input
-                        type="email"
-                        value={formData.email}
-                        onChange={(e) => handleInputChange('email', e.target.value)}
-                        required
-                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200"
-                        placeholder="john@example.com"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-semibold text-gray-700 flex items-center">
-                        Phone Number
-                        <span className="text-red-500 ml-1">*</span>
-                      </label>
-                      <input
-                        type="tel"
-                        value={formData.phone}
-                        onChange={(e) => handleInputChange('phone', e.target.value)}
-                        required
-                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200"
-                        placeholder="+1 (555) 123-4567"
-                      />
-                    </div>
-                  </div>
+
+              {/* Right Content - Form */}
+              <div className="flex-1 flex flex-col bg-white">
+                <div className="md:hidden bg-brand-600 text-white p-6 flex justify-between items-center">
+                  <h2 className="text-xl font-black uppercase tracking-tighter">
+                    {selectedCustomer ? 'Edit Client' : 'New Client'}
+                  </h2>
+                  <button onClick={handleCloseModal}>
+                    <X className="w-6 h-6" />
+                  </button>
                 </div>
 
-                {/* Address Information */}
-                <div className="space-y-4 sm:space-y-6">
-                  <div className="border-l-4 border-red-500 pl-4">
-                    <h3 className="text-lg font-semibold text-gray-900">Address Information</h3>
-                    <p className="text-sm text-gray-600 mt-1">Business location and shipping details</p>
-                  </div>
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <label className="text-sm font-semibold text-gray-700">Street Address</label>
-                      <input
-                        type="text"
-                        value={formData.address}
-                        onChange={(e) => handleInputChange('address', e.target.value)}
-                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200"
-                        placeholder="123 Main Street"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-semibold text-gray-700">Address Line 2 (Optional)</label>
-                      <input
-                        type="text"
-                        value={formData.address2}
-                        onChange={(e) => handleInputChange('address2', e.target.value)}
-                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200"
-                        placeholder="Suite 100, Building A"
-                      />
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                      <div className="space-y-2">
-                        <label className="text-sm font-semibold text-gray-700">City</label>
-                        <input
-                          type="text"
-                          value={formData.city}
-                          onChange={(e) => handleInputChange('city', e.target.value)}
-                          className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200"
-                          placeholder="San Francisco"
-                        />
+                <div className="flex-1 overflow-y-auto p-8">
+                  <form onSubmit={handleSubmit} className="space-y-10">
+                    {/* Identity Section */}
+                    <div className="space-y-6">
+                      <div className="flex items-center gap-2 text-brand-600 mb-4">
+                        <Building className="w-4 h-4" />
+                        <h3 className="text-xs font-bold uppercase tracking-widest">Business Identity</h3>
                       </div>
-                      <div className="space-y-2">
-                        <label className="text-sm font-semibold text-gray-700">State</label>
-                        <input
-                          type="text"
-                          value={formData.state}
-                          onChange={(e) => handleInputChange('state', e.target.value)}
-                          className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200"
-                          placeholder="CA"
-                        />
+
+                      <div className="grid grid-cols-1 gap-6">
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Business Name</label>
+                          <input
+                            value={formData.businessName}
+                            onChange={(e) => handleInputChange('businessName', e.target.value)}
+                            className="w-full py-2 border-b-2 border-gray-100 focus:border-brand-600 outline-none text-xl font-black uppercase tracking-tight transition-colors placeholder-gray-200 text-black"
+                            placeholder="ENTER BUSINESS NAME"
+                          />
+                        </div>
                       </div>
-                      <div className="space-y-2">
-                        <label className="text-sm font-semibold text-gray-700">ZIP Code</label>
-                        <input
-                          type="text"
-                          value={formData.zipCode}
-                          onChange={(e) => handleInputChange('zipCode', e.target.value)}
-                          className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200"
-                          placeholder="94102"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-sm font-semibold text-gray-700">Country</label>
-                        <input
-                          type="text"
-                          value={formData.country}
-                          onChange={(e) => handleInputChange('country', e.target.value)}
-                          className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200"
-                          placeholder="United States"
-                        />
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Contact Person</label>
+                          <input
+                            value={formData.contactPerson}
+                            onChange={(e) => handleInputChange('contactPerson', e.target.value)}
+                            className="w-full py-2 border-b-2 border-gray-100 focus:border-brand-600 outline-none text-sm font-bold transition-colors placeholder-gray-200 text-black"
+                            placeholder="Full Name"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Business Type</label>
+                          <select
+                            value={formData.businessType}
+                            onChange={(e) => handleInputChange('businessType', e.target.value)}
+                            className="w-full py-2 border-b-2 border-gray-100 focus:border-brand-600 outline-none text-sm font-bold uppercase bg-transparent cursor-pointer text-black"
+                          >
+                            {businessTypes.map(t => <option key={t.id} value={t.id}>{t.label}</option>)}
+                          </select>
+                        </div>
                       </div>
                     </div>
-                  </div>
+
+                    {/* Contact Section */}
+                    <div className="space-y-6">
+                      <div className="flex items-center gap-2 text-brand-600 mb-4">
+                        <Phone className="w-4 h-4" />
+                        <h3 className="text-xs font-bold uppercase tracking-widest">Contact Details</h3>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Email Address</label>
+                          <input
+                            value={formData.email}
+                            onChange={(e) => handleInputChange('email', e.target.value)}
+                            className="w-full py-2 border-b-2 border-gray-100 focus:border-brand-600 outline-none text-sm font-medium transition-colors placeholder-gray-200 text-black"
+                            placeholder="email@example.com"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Phone Number</label>
+                          <input
+                            value={formData.phone}
+                            onChange={(e) => handleInputChange('phone', e.target.value)}
+                            className="w-full py-2 border-b-2 border-gray-100 focus:border-brand-600 outline-none text-sm font-medium transition-colors placeholder-gray-200 text-black"
+                            placeholder="(555) 000-0000"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Location Section */}
+                    <div className="space-y-6">
+                      <div className="flex items-center gap-2 text-brand-600 mb-4">
+                        <MapPin className="w-4 h-4" />
+                        <h3 className="text-xs font-bold uppercase tracking-widest">Location</h3>
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Street Address</label>
+                        <input
+                          value={formData.address}
+                          onChange={(e) => handleInputChange('address', e.target.value)}
+                          className="w-full py-2 border-b-2 border-gray-100 focus:border-brand-600 outline-none text-sm font-medium transition-colors placeholder-gray-200 text-black"
+                          placeholder="Street & Number"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-6">
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400">City</label>
+                          <input
+                            value={formData.city}
+                            onChange={(e) => handleInputChange('city', e.target.value)}
+                            className="w-full py-2 border-b-2 border-gray-100 focus:border-brand-600 outline-none text-sm font-medium transition-colors placeholder-gray-200 text-black"
+                            placeholder="City"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400">State</label>
+                          <input
+                            value={formData.state}
+                            onChange={(e) => handleInputChange('state', e.target.value)}
+                            className="w-full py-2 border-b-2 border-gray-100 focus:border-brand-600 outline-none text-sm font-medium transition-colors placeholder-gray-200 text-black"
+                            placeholder="State"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Financial Section */}
+                    <div className="space-y-6">
+                      <div className="flex items-center gap-2 text-brand-600 mb-4">
+                        <DollarSign className="w-4 h-4" />
+                        <h3 className="text-xs font-bold uppercase tracking-widest">Financial & Legal</h3>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Permit Number</label>
+                          <input
+                            value={formData.permitNumber}
+                            onChange={(e) => handleInputChange('permitNumber', e.target.value)}
+                            className="w-full py-2 border-b-2 border-gray-100 focus:border-brand-600 outline-none text-sm font-mono font-medium transition-colors placeholder-gray-200 text-black"
+                            placeholder="PERMIT-000"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Credit Limit</label>
+                          <div className="relative">
+                            <span className="absolute left-0 top-1/2 -translate-y-1/2 text-sm font-bold text-gray-400">$</span>
+                            <input
+                              type="number"
+                              value={formData.creditLimit}
+                              onChange={(e) => handleInputChange('creditLimit', e.target.value)}
+                              className="w-full pl-4 py-2 border-b-2 border-gray-100 focus:border-brand-600 outline-none text-sm font-bold transition-colors placeholder-gray-200 text-black"
+                              placeholder="0.00"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </form>
                 </div>
 
-                {/* Business Details */}
-                <div className="space-y-4 sm:space-y-6">
-                  <div className="border-l-4 border-red-500 pl-4">
-                    <h3 className="text-lg font-semibold text-gray-900">Business Details</h3>
-                    <p className="text-sm text-gray-600 mt-1">Business classification and financial terms</p>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-                    <div className="space-y-2">
-                      <label className="text-sm font-semibold text-gray-700">Business Type</label>
-                      <select
-                        value={formData.businessType}
-                        onChange={(e) => handleInputChange('businessType', e.target.value)}
-                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200"
-                      >
-                        {businessTypes.map((type) => (
-                          <option key={type.id} value={type.id}>{type.label}</option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-semibold text-gray-700">Tax ID (Optional)</label>
-                      <input
-                        type="text"
-                        value={formData.taxId}
-                        onChange={(e) => handleInputChange('taxId', e.target.value)}
-                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200"
-                        placeholder="XX-XXXXXXX"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-semibold text-gray-700 flex items-center">
-                        Permit Number
-                        <span className="text-red-500 ml-1">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        value={formData.permitNumber}
-                        onChange={(e) => handleInputChange('permitNumber', e.target.value)}
-                        required
-                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200"
-                        placeholder="e.g., 06756556-1"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-semibold text-gray-700">Credit Limit</label>
-                      <div className="relative">
-                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium">$</span>
-                        <input
-                          type="number"
-                          step="0.01"
-                          value={formData.creditLimit}
-                          onChange={(e) => handleInputChange('creditLimit', e.target.value)}
-                          className="w-full pl-8 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200"
-                          placeholder="0.00"
-                        />
-                      </div>
-                    </div>
-                  </div>
+                {/* Footer */}
+                <div className="p-6 border-t border-gray-100 bg-gray-50 flex justify-end gap-4">
+                  <button
+                    onClick={handleCloseModal}
+                    className="px-6 py-3 text-[10px] font-bold uppercase tracking-widest hover:bg-gray-200 transition-colors rounded-lg text-gray-500"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleSubmit}
+                    disabled={loading}
+                    className="px-8 py-3 bg-brand-600 text-white text-[10px] font-bold uppercase tracking-widest hover:bg-black transition-colors shadow-lg hover:shadow-xl hover:-translate-y-1 rounded-lg flex items-center gap-2"
+                  >
+                    {loading ? (
+                      <>
+                        <span className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        <Check className="w-3 h-3" />
+                        Save Client
+                      </>
+                    )}
+                  </button>
                 </div>
-
-                {/* Notes */}
-                <div className="space-y-4 sm:space-y-6">
-                  <div className="border-l-4 border-red-500 pl-4">
-                    <h3 className="text-lg font-semibold text-gray-900">Additional Notes</h3>
-                    <p className="text-sm text-gray-600 mt-1">Any special instructions or important information</p>
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-semibold text-gray-700">Internal Notes</label>
-                    <textarea
-                      value={formData.notes}
-                      onChange={(e) => handleInputChange('notes', e.target.value)}
-                      rows={4}
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200 resize-none"
-                      placeholder="Add any special notes, preferences, or important details about this customer..."
-                    />
-                  </div>
-                </div>
-              </form>
-            </div>
-            
-            {/* Modal Footer */}
-            <div className="bg-gray-50 px-4 sm:px-8 py-4 sm:py-6 flex flex-col sm:flex-row justify-end space-y-3 sm:space-y-0 sm:space-x-4 border-t border-gray-200 flex-shrink-0">
-              <button
-                type="button"
-                onClick={handleCloseModal}
-                className="w-full sm:w-auto px-6 py-3 text-gray-700 bg-white border-2 border-gray-300 rounded-xl hover:bg-gray-50 hover:border-gray-400 transition-all duration-200 font-medium"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSubmit}
-                disabled={loading}
-                className="w-full sm:w-auto px-8 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl"
-              >
-                {loading ? (
-                  <div className="flex items-center justify-center space-x-2">
-                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-                    <span>Saving...</span>
-                  </div>
-                ) : (
-                  selectedCustomer ? 'Update Customer' : 'Save Customer'
-                )}
-              </button>
-            </div>
-          </motion.div>
-        </div>
-      )}
-      
-      {error && !isModalOpen && (
-        <div className="fixed bottom-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg">
-          {error}
-        </div>
-      )}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { motion } from 'framer-motion';
 import peakBrewLogo from '../assets/peak brew.svg';
 
 const Login = () => {
@@ -22,59 +23,133 @@ const Login = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col justify-center items-center">
-      <div className="absolute top-0 left-0 p-4">
-        <img src={peakBrewLogo} alt="Peak Brew Logo" className="h-12 w-auto" />
+    <div className="min-h-screen flex bg-black font-sans overflow-hidden relative">
+      {/* Animated Background Mesh */}
+      <div className="absolute inset-0 z-0 overflow-hidden">
+        <div className="absolute top-[-20%] left-[-10%] w-[70%] h-[70%] bg-brand-600 rounded-full mix-blend-screen filter blur-[120px] opacity-40 animate-pulse-slow"></div>
+        <div className="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] bg-brand-800 rounded-full mix-blend-screen filter blur-[100px] opacity-30 animate-pulse-slow" style={{ animationDelay: '2s' }}></div>
+        <div className="absolute top-[40%] left-[40%] w-[40%] h-[40%] bg-red-600 rounded-full mix-blend-screen filter blur-[80px] opacity-20 animate-pulse-slow" style={{ animationDelay: '1s' }}></div>
       </div>
-      <div className="max-w-md w-full mx-auto">
-        <div className="text-center mb-12">
-          <h1 className="text-3xl font-bold text-gray-900">Welcome back</h1>
-          <p className="text-gray-500 mt-2">Login to continue to your account.</p>
+
+      {/* Left Side - Brand Identity */}
+      <div className="hidden lg:flex lg:w-1/2 relative z-10 flex-col justify-between p-16 xl:p-24">
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+        >
+          <img src={peakBrewLogo} alt="Peak Brew Logo" className="h-12 w-auto invert brightness-0" />
+        </motion.div>
+
+        <div className="relative">
+          <motion.h1
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
+            className="text-8xl xl:text-9xl font-black text-white leading-[0.85] tracking-tighter mb-8"
+          >
+            PEAK<br />BREW
+          </motion.h1>
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8, delay: 0.4, ease: [0.16, 1, 0.3, 1] }}
+            className="flex items-center gap-4"
+          >
+            <div className="h-1 w-24 bg-brand-600"></div>
+            <p className="text-brand-100 text-xl font-mono uppercase tracking-widest">
+              Nepali Beer Distribution • Ohio
+            </p>
+          </motion.div>
         </div>
-        <div className="bg-white p-8 rounded-xl shadow-lg">
-          <form onSubmit={handleSubmit} className="space-y-6">
+
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 1, delay: 0.6 }}
+          className="text-brand-200/50 text-sm font-mono uppercase tracking-widest"
+        >
+          System v2.4.0 — Secure Access
+        </motion.div>
+      </div>
+
+      {/* Right Side - Login Form */}
+      <div className="w-full lg:w-1/2 flex flex-col justify-center items-center p-8 relative z-10">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.6, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
+          className="w-full max-w-md bg-white/5 backdrop-blur-2xl border border-white/10 p-10 shadow-2xl"
+        >
+          <div className="mb-12">
+            <h2 className="text-4xl font-bold text-white tracking-tight mb-2">
+              Welcome Back
+            </h2>
+            <p className="text-gray-400">Enter your credentials to access the dashboard.</p>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-8">
             {error && (
-              <div className="bg-red-100 text-red-700 p-3 rounded-lg border border-red-200">
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                className="bg-brand-900/50 border border-brand-600/50 p-4 text-brand-200 text-sm font-mono"
+              >
                 {error}
-              </div>
+              </motion.div>
             )}
-            <div>
-              <label className="text-sm font-medium text-gray-700" htmlFor="email">
-                Email address
-              </label>
-              <input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="mt-1 w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                placeholder="you@example.com"
-              />
+
+            <div className="space-y-6">
+              <div className="group relative">
+                <label className="block text-xs font-bold text-brand-500 uppercase tracking-widest mb-2" htmlFor="email">
+                  Email Identity
+                </label>
+                <input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  className="w-full py-4 bg-black/20 border-b-2 border-white/20 text-xl text-white placeholder-white/20 focus:outline-none focus:border-brand-600 focus:bg-black/40 transition-all duration-300 font-medium rounded-none"
+                  placeholder="NAME@COMPANY.COM"
+                />
+              </div>
+              <div className="group relative">
+                <label className="block text-xs font-bold text-brand-500 uppercase tracking-widest mb-2" htmlFor="password">
+                  Access Key
+                </label>
+                <input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  className="w-full py-4 bg-black/20 border-b-2 border-white/20 text-xl text-white placeholder-white/20 focus:outline-none focus:border-brand-600 focus:bg-black/40 transition-all duration-300 font-medium rounded-none"
+                  placeholder="••••••••"
+                />
+              </div>
             </div>
-            <div>
-              <label className="text-sm font-medium text-gray-700" htmlFor="password">
-                Password
-              </label>
-              <input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="mt-1 w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                placeholder="••••••••"
-              />
-            </div>
+
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-red-500 text-white py-3 rounded-lg font-semibold hover:bg-red-600 transition-colors duration-300 disabled:bg-red-300"
+              className="w-full bg-brand-600 text-white py-5 text-lg font-bold uppercase tracking-widest hover:bg-brand-500 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-brand-600/40 hover:-translate-y-1"
             >
-              {loading ? 'Signing In...' : 'Sign In'}
+              {loading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                  Authenticating...
+                </span>
+              ) : 'Initialize Session'}
             </button>
           </form>
-        </div>
+
+          <div className="mt-12 flex justify-center">
+            <a href="#" className="text-white/40 text-xs font-mono uppercase tracking-wider hover:text-brand-500 transition-colors">
+              Forgot Credentials?
+            </a>
+          </div>
+        </motion.div>
       </div>
     </div>
   );

@@ -2,41 +2,71 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer utilities {
-  .star-movement-bottom {
-    animation: star-movement-bottom linear infinite alternate;
-  }
-  
-  .star-movement-top {
-    animation: star-movement-top linear infinite alternate;
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    scroll-behavior: smooth;
   }
 
+  body {
+    @apply bg-white text-gray-900 font-sans;
+  }
+
+  ::selection {
+    @apply bg-brand-600 text-white;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-bold tracking-tight text-gray-900;
+  }
+}
+
+@layer utilities {
   .perspective-1000 {
     perspective: 1000px;
   }
-  
+
   .transform-style-preserve-3d {
     transform-style: preserve-3d;
   }
-  
+
   .backface-hidden {
     backface-visibility: hidden;
   }
-  
+
   .rotate-y-180 {
     transform: rotateY(180deg);
   }
-  
+
   .scrollbar-hide {
-    -ms-overflow-style: none;  /* Internet Explorer 10+ */
-    scrollbar-width: none;  /* Firefox */
-  }
-  
-  .scrollbar-hide::-webkit-scrollbar { 
-    display: none;  /* Safari and Chrome */
+    -ms-overflow-style: none;
+    scrollbar-width: none;
   }
 
-  /* Line clamp utilities for better mobile text truncation */
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Custom Red Scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-gray-100;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-brand-600 hover:bg-brand-700 transition-colors;
+  }
+
   .line-clamp-1 {
     overflow: hidden;
     display: -webkit-box;
@@ -44,42 +74,12 @@
     -webkit-line-clamp: 1;
     line-clamp: 1;
   }
-  
+
   .line-clamp-2 {
     overflow: hidden;
     display: -webkit-box;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
     line-clamp: 2;
-  }
-  
-  .line-clamp-3 {
-    overflow: hidden;
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 3;
-    line-clamp: 3;
-  }
-}
-
-@keyframes star-movement-bottom {
-  0% { 
-    transform: translate(0%, 0%); 
-    opacity: 1; 
-  }
-  100% { 
-    transform: translate(-100%, 0%); 
-    opacity: 0; 
-  }
-}
-
-@keyframes star-movement-top {
-  0% { 
-    transform: translate(0%, 0%); 
-    opacity: 1; 
-  }
-  100% { 
-    transform: translate(100%, 0%); 
-    opacity: 0; 
   }
 }
