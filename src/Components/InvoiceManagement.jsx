@@ -37,6 +37,9 @@ import InvoicePDF from './InvoicePDF';
 import InvoicePDFService from '../services/InvoicePDFService';
 import { useInvoice } from '../contexts/InvoiceContext';
 import { products as fixedProducts } from '../data/products';
+import Toast from './Toast';
+import PromptModal from './PromptModal';
+import ConfirmModal from './ConfirmModal';
 
 const InvoiceManagement = () => {
   const [invoices, setInvoices] = useState([]);
@@ -45,6 +48,7 @@ const InvoiceManagement = () => {
   const [products, setProducts] = useState(fixedProducts);
   const [searchQuery, setSearchQuery] = useState('');
   const [dateFilter, setDateFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('all');
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -52,6 +56,11 @@ const InvoiceManagement = () => {
   const [hasMore, setHasMore] = useState(true);
   const [lastDoc, setLastDoc] = useState(null);
   const [totalInvoices, setTotalInvoices] = useState(0);
+
+  // UI State
+  const [toast, setToast] = useState(null);
+  const [promptModal, setPromptModal] = useState({ isOpen: false, title: '', message: '', onConfirm: () => { } });
+  const [confirmModal, setConfirmModal] = useState({ isOpen: false, title: '', message: '', onConfirm: () => { } });
 
   const {
     selectedItems,
@@ -78,7 +87,7 @@ const InvoiceManagement = () => {
 
   useEffect(() => {
     filterInvoices();
-  }, [invoices, searchQuery, dateFilter]);
+  }, [invoices, searchQuery, dateFilter, statusFilter]);
 
   // Add effect to handle search/filter changes with fresh data
   useEffect(() => {
@@ -99,12 +108,14 @@ const InvoiceManagement = () => {
       return () => clearTimeout(timeoutId);
     };
 
-    // Only fetch fresh data if there are active filters/search
-    if (searchQuery || dateFilter !== 'all') {
-      const cleanup = handleFilterChange();
-      return cleanup;
-    }
-  }, [searchQuery, dateFilter]);
+    // Fetch fresh data when filters change
+    let cleanup;
+    handleFilterChange().then(c => cleanup = c);
+
+    return () => {
+      if (cleanup) cleanup();
+    };
+  }, [searchQuery, dateFilter, statusFilter]);
 
   const fetchData = async (loadMore = false) => {
     setLoading(true);
@@ -117,7 +128,8 @@ const InvoiceManagement = () => {
       const filters = {
         year: dateFilter === 'year' ? currentYear : undefined,
         month: dateFilter === 'month' ? currentMonth : undefined,
-        searchTerm: searchQuery
+        searchTerm: searchQuery,
+        status: statusFilter !== 'all' ? statusFilter : undefined
       };
 
       // Try optimized loading first
@@ -177,13 +189,39 @@ const InvoiceManagement = () => {
         inv.customerName?.toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
-    // Date filtering logic remains the same
+
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter(inv => inv.status === statusFilter);
+    }
+
+    // Date filtering logic remains the same (handled by server-side mostly, but client side refinement if needed)
     setFilteredInvoices(filtered);
   };
 
-  const updateInvoiceStatus = async (invoiceId, newStatus) => {
+  const showToast = (message, type = 'success') => {
+    setToast({ message, type });
+  };
+
+  const handleStatusUpdate = (invoiceId, newStatus) => {
+    if (newStatus === 'cancelled' || newStatus === 'expired') {
+      setPromptModal({
+        isOpen: true,
+        title: `Mark as ${newStatus === 'cancelled' ? 'Returned' : 'Expired'}`,
+        message: `Please enter a reason for marking this invoice as ${newStatus === 'cancelled' ? 'Returned' : 'Expired'}:`,
+        onConfirm: (reason) => performStatusUpdate(invoiceId, newStatus, reason)
+      });
+    } else {
+      performStatusUpdate(invoiceId, newStatus);
+    }
+  };
+
+  const performStatusUpdate = async (invoiceId, newStatus, statusNote = '') => {
     try {
-      await updateDoc(doc(db, 'invoices', invoiceId), { status: newStatus, updatedAt: new Date() });
+      await updateDoc(doc(db, 'invoices', invoiceId), {
+        status: newStatus,
+        updatedAt: new Date(),
+        statusNote: statusNote
+      });
 
       // Clear cache to ensure fresh data
       const { clearAllCaches } = await import('../services/optimizedFirebaseService');
@@ -192,53 +230,68 @@ const InvoiceManagement = () => {
       // Immediately update UI
       setInvoices(prev => prev.map(invoice =>
         invoice.id === invoiceId
-          ? { ...invoice, status: newStatus, updatedAt: new Date() }
+          ? { ...invoice, status: newStatus, updatedAt: new Date(), statusNote: statusNote }
           : invoice
       ));
 
       // Update filtered list as well
       setFilteredInvoices(prev => prev.map(invoice =>
         invoice.id === invoiceId
-          ? { ...invoice, status: newStatus, updatedAt: new Date() }
+          ? { ...invoice, status: newStatus, updatedAt: new Date(), statusNote: statusNote }
           : invoice
       ));
+
+      showToast(`Invoice marked as ${newStatus === 'cancelled' ? 'Returned' : newStatus}`, 'success');
 
       // Fetch fresh data in background
       setTimeout(() => fetchData(), 100);
 
     } catch (err) {
       console.error('Error updating invoice status:', err);
-      setError('Failed to update invoice status.');
+      showToast('Failed to update invoice status', 'error');
 
       // Refresh data on error to ensure consistency
       fetchData();
     }
   };
 
-  const deleteInvoice = async (invoiceId) => {
-    if (window.confirm('Are you sure you want to delete this invoice?')) {
-      try {
-        await deleteDoc(doc(db, 'invoices', invoiceId));
+  const updateInvoiceStatus = (invoiceId, newStatus) => {
+    handleStatusUpdate(invoiceId, newStatus);
+  };
 
-        // Clear cache to ensure fresh data
-        const { clearAllCaches } = await import('../services/optimizedFirebaseService');
-        clearAllCaches();
+  const deleteInvoice = (invoiceId) => {
+    setConfirmModal({
+      isOpen: true,
+      title: 'Delete Invoice',
+      message: 'Are you sure you want to delete this invoice? This action cannot be undone.',
+      confirmLabel: 'Delete',
+      isDestructive: true,
+      onConfirm: async () => {
+        try {
+          await deleteDoc(doc(db, 'invoices', invoiceId));
 
-        // Immediately update UI by removing from local state
-        setInvoices(prev => prev.filter(invoice => invoice.id !== invoiceId));
-        setFilteredInvoices(prev => prev.filter(invoice => invoice.id !== invoiceId));
+          // Clear cache to ensure fresh data
+          const { clearAllCaches } = await import('../services/optimizedFirebaseService');
+          clearAllCaches();
 
-        // Fetch fresh data in background
-        setTimeout(() => fetchData(), 100);
+          // Immediately update UI by removing from local state
+          setInvoices(prev => prev.filter(invoice => invoice.id !== invoiceId));
+          setFilteredInvoices(prev => prev.filter(invoice => invoice.id !== invoiceId));
 
-      } catch (err) {
-        console.error('Error deleting invoice:', err);
-        setError('Failed to delete invoice.');
+          showToast('Invoice deleted successfully', 'success');
 
-        // Refresh data on error to ensure consistency
-        fetchData();
+          // Fetch fresh data in background
+          setTimeout(() => fetchData(), 100);
+
+        } catch (err) {
+          console.error('Error deleting invoice:', err);
+          showToast('Failed to delete invoice', 'error');
+
+          // Refresh data on error to ensure consistency
+          fetchData();
+        }
       }
-    }
+    });
   };
 
   const formatDate = (date) => {
@@ -254,6 +307,8 @@ const InvoiceManagement = () => {
       paid: { color: 'bg-green-100 text-green-800', label: 'Paid' },
       completed: { color: 'bg-blue-100 text-blue-800', label: 'Completed' },
       pending: { color: 'bg-yellow-100 text-yellow-800', label: 'Pending' },
+      cancelled: { color: 'bg-red-100 text-red-800', label: 'Returned' },
+      expired: { color: 'bg-orange-100 text-orange-800', label: 'Expired' },
     };
     const { color, label } = statusMap[status] || { color: 'bg-gray-100 text-gray-800', label: status };
     return (
@@ -273,11 +328,12 @@ const InvoiceManagement = () => {
       await pdfService.downloadPDF(invoice, filename);
 
       console.log(`✅ Professional PDF generated and downloaded: ${filename}`);
+      showToast('PDF downloaded successfully', 'success');
 
       return true;
     } catch (error) {
       console.error('❌ PDF Generation Error:', error);
-      alert('Failed to generate PDF. Please try again.');
+      showToast('Failed to generate PDF', 'error');
       throw error;
     }
   };
@@ -299,6 +355,8 @@ const InvoiceManagement = () => {
         // Immediately update the local state with the new invoice
         setInvoices(prev => [newInvoice, ...prev]);
         setFilteredInvoices(prev => [newInvoice, ...prev]);
+
+        showToast('Invoice created successfully', 'success');
 
         // Auto-generate PDF for the new invoice
         try {
@@ -324,6 +382,7 @@ const InvoiceManagement = () => {
       // Still close and refresh even if something fails
       closeCreateInvoice();
       clearItems();
+      showToast('Invoice created, but encountered issues', 'warning');
 
       // Force refresh data
       setTimeout(() => fetchData(), 100);
@@ -370,6 +429,7 @@ const InvoiceManagement = () => {
                       const { clearAllCaches } = await import('../services/optimizedFirebaseService');
                       clearAllCaches();
                       await fetchData();
+                      showToast('Data refreshed', 'info');
                     } catch (error) {
                       fetchData();
                     }
@@ -414,6 +474,18 @@ const InvoiceManagement = () => {
               >
                 {dateFilterOptions.map(opt => <option key={opt.id} value={opt.id}>{opt.label}</option>)}
               </select>
+              <select
+                onChange={(e) => {
+                  setStatusFilter(e.target.value);
+                }}
+                className="bg-gray-100 text-xs font-bold uppercase tracking-widest px-4 py-2 border-none outline-none focus:ring-0 cursor-pointer hover:bg-gray-200 transition-colors"
+              >
+                <option value="all">All Statuses</option>
+                <option value="pending">Pending</option>
+                <option value="paid">Paid</option>
+                <option value="cancelled">Returned</option>
+                <option value="expired">Expired</option>
+              </select>
             </div>
           </div>
         </div>
@@ -447,7 +519,12 @@ const InvoiceManagement = () => {
                 >
                   <div className="p-6 flex flex-col md:flex-row items-start md:items-center gap-6">
                     {/* Status Indicator */}
-                    <div className={`w-1 self-stretch ${invoice.status === 'paid' ? 'bg-green-500' : invoice.status === 'pending' ? 'bg-yellow-500' : 'bg-gray-300'}`}></div>
+                    <div className={`w-1 self-stretch ${invoice.status === 'paid' ? 'bg-green-500' :
+                        invoice.status === 'pending' ? 'bg-yellow-500' :
+                          invoice.status === 'cancelled' ? 'bg-red-500' :
+                            invoice.status === 'expired' ? 'bg-orange-500' :
+                              'bg-gray-300'
+                      }`}></div>
 
                     {/* Main Info */}
                     <div className="flex-1 min-w-0 grid grid-cols-1 md:grid-cols-4 gap-6 items-center">
@@ -459,6 +536,11 @@ const InvoiceManagement = () => {
                       <div className="col-span-1">
                         <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Client</p>
                         <p className="text-sm font-bold text-gray-900 truncate">{invoice.customerName}</p>
+                        {invoice.statusNote && (
+                          <p className="text-[10px] text-red-500 font-bold uppercase tracking-wider mt-1 truncate">
+                            Note: {invoice.statusNote}
+                          </p>
+                        )}
                       </div>
 
                       <div className="col-span-1">
@@ -474,13 +556,33 @@ const InvoiceManagement = () => {
 
                     {/* Actions (Slide in on hover) */}
                     <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 transform translate-x-4 group-hover:translate-x-0">
-                      {invoice.status !== 'paid' && invoice.status !== 'completed' && (
+                      {invoice.status !== 'paid' && (
                         <button
                           onClick={() => updateInvoiceStatus(invoice.id, 'paid')}
                           className="p-2 hover:bg-green-500 hover:text-white transition-colors"
                           title="Mark Paid"
                         >
                           <CheckCircle className="w-4 h-4" />
+                        </button>
+                      )}
+
+                      {invoice.status !== 'cancelled' && (
+                        <button
+                          onClick={() => updateInvoiceStatus(invoice.id, 'cancelled')}
+                          className="p-2 hover:bg-red-500 hover:text-white transition-colors"
+                          title="Mark Returned"
+                        >
+                          <XCircle className="w-4 h-4" />
+                        </button>
+                      )}
+
+                      {invoice.status !== 'expired' && (
+                        <button
+                          onClick={() => updateInvoiceStatus(invoice.id, 'expired')}
+                          className="p-2 hover:bg-orange-500 hover:text-white transition-colors"
+                          title="Mark Expired"
+                        >
+                          <Clock className="w-4 h-4" />
                         </button>
                       )}
                       <button
@@ -551,6 +653,36 @@ const InvoiceManagement = () => {
           </Dialog>
         </Modal>
       </ModalOverlay>
+
+      {/* Global Toast */}
+      <AnimatePresence>
+        {toast && (
+          <Toast
+            message={toast.message}
+            type={toast.type}
+            onClose={() => setToast(null)}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Modals */}
+      <PromptModal
+        isOpen={promptModal.isOpen}
+        onClose={() => setPromptModal({ ...promptModal, isOpen: false })}
+        onConfirm={promptModal.onConfirm}
+        title={promptModal.title}
+        message={promptModal.message}
+      />
+
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        onClose={() => setConfirmModal({ ...confirmModal, isOpen: false })}
+        onConfirm={confirmModal.onConfirm}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        confirmLabel={confirmModal.confirmLabel}
+        isDestructive={confirmModal.isDestructive}
+      />
     </div>
   );
 };

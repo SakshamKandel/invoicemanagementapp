@@ -12,11 +12,11 @@ import DebugProducts from './Components/DebugProducts';
 
 function ProtectedRoute({ children }) {
   const { currentUser } = useAuth();
-  
+
   if (!currentUser) {
     return <Login />;
   }
-  
+
   return children;
 }
 
@@ -34,45 +34,45 @@ function AppContent() {
           <Navigation>
             <Routes>
               <Route path="/" element={<Navigate to="/customers" replace />} />
-              <Route 
-                path="/customers" 
+              <Route
+                path="/customers"
                 element={
                   <ProtectedRoute>
                     <CustomerManagement />
                   </ProtectedRoute>
-                } 
+                }
               />
-              <Route 
-                path="/products" 
+              <Route
+                path="/products"
                 element={
                   <ProtectedRoute>
                     <ProductCatalog />
                   </ProtectedRoute>
-                } 
+                }
               />
-              <Route 
-                path="/invoices" 
+              <Route
+                path="/invoices"
                 element={
                   <ProtectedRoute>
                     <InvoiceManagement />
                   </ProtectedRoute>
-                } 
+                }
               />
-              <Route 
-                path="/analytics" 
+              <Route
+                path="/analytics"
                 element={
                   <ProtectedRoute>
                     <Analytics />
                   </ProtectedRoute>
-                } 
+                }
               />
-              <Route 
-                path="/debug" 
+              <Route
+                path="/debug"
                 element={
                   <ProtectedRoute>
                     <DebugProducts />
                   </ProtectedRoute>
-                } 
+                }
               />
               <Route path="*" element={<Navigate to="/customers" replace />} />
             </Routes>

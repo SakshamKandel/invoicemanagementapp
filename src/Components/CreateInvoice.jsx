@@ -406,14 +406,14 @@ const CreateInvoice = ({ customers = [], onClose, onInvoiceCreated }) => {
           {/* Right Column - Items & Totals */}
           <div className="flex-1 flex flex-col bg-white h-auto md:h-full">
             {/* Add Item Bar */}
-            <div className="p-6 border-b border-gray-100 bg-gray-50/50">
-              <div className="flex flex-col md:flex-row gap-4 items-end">
-                <div className="flex-1 w-full">
+            <div className="p-4 md:p-6 border-b border-gray-100 bg-gray-50/50">
+              <div className="flex flex-col gap-4">
+                <div className="w-full">
                   <label className="text-[10px] font-bold uppercase text-gray-400 mb-1 block">Product</label>
                   <select
                     value={selectedProduct}
                     onChange={(e) => setSelectedProduct(e.target.value)}
-                    className="w-full px-4 py-2 bg-white border border-gray-200 text-sm font-bold uppercase focus:border-brand-600 outline-none"
+                    className="w-full px-4 py-3 md:py-2 bg-white border border-gray-200 text-sm font-bold uppercase focus:border-brand-600 outline-none rounded-none"
                   >
                     <option value="">Select Product...</option>
                     {products.map(p => (
@@ -423,38 +423,42 @@ const CreateInvoice = ({ customers = [], onClose, onInvoiceCreated }) => {
                     ))}
                   </select>
                 </div>
-                <div className="grid grid-cols-2 gap-4 w-full md:w-auto">
-                  <div className="w-full md:w-24">
-                    <label className="text-[10px] font-bold uppercase text-gray-400 mb-1 block">Qty</label>
-                    <input
-                      type="number"
-                      min="1"
-                      value={quantity}
-                      onChange={(e) => setQuantity(e.target.value)}
-                      className="w-full px-4 py-2 bg-white border border-gray-200 text-sm font-bold text-center focus:border-brand-600 outline-none"
-                    />
-                  </div>
-                  <div className="w-full md:w-32">
-                    <label className="text-[10px] font-bold uppercase text-gray-400 mb-1 block">Price Override</label>
-                    <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">$</span>
+
+                <div className="flex flex-col md:flex-row gap-4 items-end">
+                  <div className="grid grid-cols-2 gap-4 w-full md:w-auto flex-1">
+                    <div className="w-full">
+                      <label className="text-[10px] font-bold uppercase text-gray-400 mb-1 block">Qty</label>
                       <input
                         type="number"
-                        value={manualPrice}
-                        onChange={(e) => setManualPrice(e.target.value)}
-                        placeholder="Auto"
-                        className="w-full pl-6 pr-4 py-2 bg-white border border-gray-200 text-sm font-bold focus:border-brand-600 outline-none"
+                        min="1"
+                        value={quantity}
+                        onChange={(e) => setQuantity(e.target.value)}
+                        className="w-full px-4 py-3 md:py-2 bg-white border border-gray-200 text-sm font-bold text-center focus:border-brand-600 outline-none"
                       />
                     </div>
+                    <div className="w-full">
+                      <label className="text-[10px] font-bold uppercase text-gray-400 mb-1 block">Price Override</label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">$</span>
+                        <input
+                          type="number"
+                          value={manualPrice}
+                          onChange={(e) => setManualPrice(e.target.value)}
+                          placeholder="Auto"
+                          className="w-full pl-6 pr-4 py-3 md:py-2 bg-white border border-gray-200 text-sm font-bold focus:border-brand-600 outline-none"
+                        />
+                      </div>
+                    </div>
                   </div>
+
+                  <button
+                    onClick={handleAddItem}
+                    disabled={!selectedProduct}
+                    className="w-full md:w-auto px-6 py-3 md:py-2 bg-black text-white text-xs font-bold uppercase tracking-widest hover:bg-brand-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed h-[42px] md:h-[38px] shrink-0"
+                  >
+                    Add Item
+                  </button>
                 </div>
-                <button
-                  onClick={handleAddItem}
-                  disabled={!selectedProduct}
-                  className="w-full md:w-auto px-6 py-2 bg-black text-white text-xs font-bold uppercase tracking-widest hover:bg-brand-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed h-[38px]"
-                >
-                  Add
-                </button>
               </div>
             </div>
 
