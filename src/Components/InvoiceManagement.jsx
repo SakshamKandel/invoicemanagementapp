@@ -408,10 +408,10 @@ const InvoiceManagement = () => {
     <div className="min-h-screen bg-white font-sans text-black">
       {/* Editorial Header */}
       <div className="border-b-4 border-brand-600 bg-white sticky top-0 z-30">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-8">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
             <div>
-              <h1 className="text-5xl font-black uppercase tracking-tighter mb-2">
+              <h1 className="text-2xl md:text-5xl font-black uppercase tracking-tighter mb-2">
                 Invoice<br />Records
               </h1>
               <div className="flex items-center gap-4 text-sm font-mono uppercase tracking-widest text-gray-500">
@@ -453,7 +453,7 @@ const InvoiceManagement = () => {
           </div>
 
           {/* Search & Filter Bar */}
-          <div className="mt-8 flex flex-col md:flex-row gap-4 items-center border-t border-gray-100 pt-6">
+          <div className="mt-4 md:mt-8 flex flex-col md:flex-row gap-4 items-center border-t border-gray-100 pt-4 md:pt-6">
             <div className="relative flex-1 w-full">
               <Search className="absolute left-0 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
               <input
@@ -520,10 +520,10 @@ const InvoiceManagement = () => {
                   <div className="p-4 md:p-6 flex flex-col md:flex-row items-start md:items-center gap-4 md:gap-6">
                     {/* Status Indicator */}
                     <div className={`w-1 self-stretch ${invoice.status === 'paid' ? 'bg-green-500' :
-                        invoice.status === 'pending' ? 'bg-yellow-500' :
-                          invoice.status === 'cancelled' ? 'bg-red-500' :
-                            invoice.status === 'expired' ? 'bg-orange-500' :
-                              'bg-gray-300'
+                      invoice.status === 'pending' ? 'bg-yellow-500' :
+                        invoice.status === 'cancelled' ? 'bg-red-500' :
+                          invoice.status === 'expired' ? 'bg-orange-500' :
+                            'bg-gray-300'
                       }`}></div>
 
                     {/* Main Info */}

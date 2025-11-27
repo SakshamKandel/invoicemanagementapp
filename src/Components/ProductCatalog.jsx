@@ -290,10 +290,10 @@ const ProductCatalog = () => {
     <div className="min-h-screen bg-white font-sans text-black">
       {/* Editorial Header */}
       <div className="border-b-4 border-brand-600 bg-white sticky top-0 z-30">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-8">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
             <div>
-              <h1 className="text-4xl md:text-5xl font-black uppercase tracking-tighter mb-2">
+              <h1 className="text-2xl md:text-5xl font-black uppercase tracking-tighter mb-2">
                 Product<br />Catalog
               </h1>
               <div className="flex items-center gap-4 text-sm font-mono uppercase tracking-widest text-gray-500">
@@ -346,7 +346,7 @@ const ProductCatalog = () => {
           </div>
 
           {/* Search & Filter Bar */}
-          <div className="mt-8 flex flex-col md:flex-row gap-4 items-center border-t border-gray-100 pt-6">
+          <div className="mt-4 md:mt-8 flex flex-col md:flex-row gap-4 items-center border-t border-gray-100 pt-4 md:pt-6">
             <div className="relative flex-1 w-full">
               <Search className="absolute left-0 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
               <input
@@ -476,201 +476,203 @@ const ProductCatalog = () => {
       {/* Add Product Modal */}
       <AnimatePresence>
         {isAddProductModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setIsAddProductModalOpen(false)}
-              className="absolute inset-0 bg-white/90 backdrop-blur-xl"
-            />
+          <div className="fixed inset-0 z-50 overflow-y-auto">
+            <div className="flex min-h-full items-center justify-center p-4 sm:p-6">
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setIsAddProductModalOpen(false)}
+                className="fixed inset-0 bg-white/90 backdrop-blur-xl"
+              />
 
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative w-full max-w-5xl bg-white shadow-2xl overflow-hidden flex flex-col md:flex-row rounded-2xl"
-            >
-              {/* Left Side - Visual & Image Upload */}
-              <div className="w-full md:w-2/5 bg-gray-900 p-8 flex flex-col justify-between relative overflow-hidden">
-                <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none">
-                  <div className="absolute top-[-50%] left-[-50%] w-[200%] h-[200%] bg-[radial-gradient(circle,rgba(255,255,255,0.2)_0%,transparent_60%)]"></div>
-                </div>
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                className="relative w-full max-w-5xl bg-white shadow-2xl overflow-hidden flex flex-col md:flex-row rounded-2xl"
+              >
+                {/* Left Side - Visual & Image Upload */}
+                <div className="w-full md:w-2/5 bg-gray-900 p-8 flex flex-col justify-between relative overflow-hidden">
+                  <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none">
+                    <div className="absolute top-[-50%] left-[-50%] w-[200%] h-[200%] bg-[radial-gradient(circle,rgba(255,255,255,0.2)_0%,transparent_60%)]"></div>
+                  </div>
 
-                <div className="relative z-10">
-                  <h2 className="text-3xl font-black uppercase tracking-tighter text-white mb-2">New<br />Product</h2>
-                  <p className="text-gray-400 text-xs font-mono uppercase tracking-widest">Inventory Addition</p>
-                </div>
+                  <div className="relative z-10">
+                    <h2 className="text-3xl font-black uppercase tracking-tighter text-white mb-2">New<br />Product</h2>
+                    <p className="text-gray-400 text-xs font-mono uppercase tracking-widest">Inventory Addition</p>
+                  </div>
 
-                <div className="relative z-10 my-8 flex-1 flex flex-col justify-center">
-                  <div className="aspect-[3/4] bg-white/5 border-2 border-dashed border-white/20 rounded-xl flex flex-col items-center justify-center relative group overflow-hidden transition-colors hover:bg-white/10 hover:border-white/40">
-                    {isUploadingImage ? (
-                      <div className="flex flex-col items-center gap-4">
-                        <div className="w-8 h-8 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                        <span className="text-xs font-bold uppercase tracking-widest text-white">Uploading...</span>
-                      </div>
-                    ) : newProductData.image ? (
-                      <>
-                        <img src={newProductData.image} alt="Preview" className="w-full h-full object-contain p-4" />
-                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                          <span className="text-white text-xs font-bold uppercase tracking-widest">Change Image</span>
+                  <div className="relative z-10 my-8 flex-1 flex flex-col justify-center">
+                    <div className="aspect-video md:aspect-[3/4] bg-white/5 border-2 border-dashed border-white/20 rounded-xl flex flex-col items-center justify-center relative group overflow-hidden transition-colors hover:bg-white/10 hover:border-white/40">
+                      {isUploadingImage ? (
+                        <div className="flex flex-col items-center gap-4">
+                          <div className="w-8 h-8 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                          <span className="text-xs font-bold uppercase tracking-widest text-white">Uploading...</span>
                         </div>
-                      </>
-                    ) : (
-                      <div className="flex flex-col items-center gap-4 text-gray-500 group-hover:text-white transition-colors">
-                        <ImageIcon className="w-12 h-12" />
-                        <span className="text-xs font-bold uppercase tracking-widest">Upload Visual</span>
-                      </div>
-                    )}
-                    <input
-                      type="file"
-                      accept="image/png, image/jpeg, image/webp"
-                      onChange={handleImageUpload}
-                      className="absolute inset-0 opacity-0 cursor-pointer"
-                    />
-                  </div>
-                  <div className="mt-4 text-center">
-                    <p className="text-[10px] text-gray-500 uppercase tracking-widest mb-2">Or use URL</p>
-                    <div className="relative">
+                      ) : newProductData.image ? (
+                        <>
+                          <img src={newProductData.image} alt="Preview" className="w-full h-full object-contain p-4" />
+                          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <span className="text-white text-xs font-bold uppercase tracking-widest">Change Image</span>
+                          </div>
+                        </>
+                      ) : (
+                        <div className="flex flex-col items-center gap-4 text-gray-500 group-hover:text-white transition-colors">
+                          <ImageIcon className="w-12 h-12" />
+                          <span className="text-xs font-bold uppercase tracking-widest">Upload Visual</span>
+                        </div>
+                      )}
                       <input
-                        value={newProductData.image}
-                        onChange={(e) => setNewProductData({ ...newProductData, image: e.target.value })}
-                        className="w-full bg-white/5 border border-white/10 rounded px-3 py-2 text-xs text-white placeholder-gray-600 focus:border-brand-600 outline-none transition-colors"
-                        placeholder="https://..."
+                        type="file"
+                        accept="image/png, image/jpeg, image/webp"
+                        onChange={handleImageUpload}
+                        className="absolute inset-0 opacity-0 cursor-pointer"
                       />
                     </div>
-                  </div>
-                </div>
-
-                <div className="relative z-10">
-                  <p className="text-[10px] text-gray-500 leading-relaxed">
-                    Supported formats: PNG, JPG, WEBP.<br />
-                    Maximum file size: 5MB.<br />
-                    Ensure high resolution for best display.
-                  </p>
-                </div>
-              </div>
-
-              {/* Right Side - Form Details */}
-              <div className="flex-1 bg-white p-8 md:p-10 flex flex-col">
-                <div className="flex justify-between items-start mb-8">
-                  <div className="flex items-center gap-2 text-brand-600">
-                    <Package className="w-5 h-5" />
-                    <span className="text-xs font-bold uppercase tracking-widest">Product Details</span>
-                  </div>
-                  <button
-                    onClick={() => setIsAddProductModalOpen(false)}
-                    className="p-2 hover:bg-gray-100 rounded-full transition-colors -mr-2 -mt-2"
-                  >
-                    <X className="w-5 h-5 text-gray-400" />
-                  </button>
-                </div>
-
-                <form onSubmit={handleAddProduct} className="space-y-6 flex-1 flex flex-col">
-                  <div className="space-y-6">
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Product Name</label>
-                      <input
-                        required
-                        value={newProductData.name}
-                        onChange={(e) => setNewProductData({ ...newProductData, name: e.target.value })}
-                        className="w-full py-2 border-b border-gray-200 focus:border-brand-600 outline-none text-xl font-bold uppercase tracking-tight transition-colors placeholder-gray-200 text-black"
-                        placeholder="E.G. BARAH LAGER"
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-6">
-                      <div className="space-y-1">
-                        <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Brand</label>
-                        <select
-                          value={newProductData.brand}
-                          onChange={(e) => setNewProductData({ ...newProductData, brand: e.target.value })}
-                          className="w-full py-2 border-b border-gray-200 focus:border-brand-600 outline-none text-sm font-bold uppercase transition-colors bg-transparent cursor-pointer text-black"
-                        >
-                          <option value="">Select Brand</option>
-                          {brands.map(b => <option key={b} value={b}>{b}</option>)}
-                        </select>
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Size</label>
+                    <div className="mt-4 text-center">
+                      <p className="text-[10px] text-gray-500 uppercase tracking-widest mb-2">Or use URL</p>
+                      <div className="relative">
                         <input
-                          value={newProductData.size}
-                          onChange={(e) => setNewProductData({ ...newProductData, size: e.target.value })}
-                          className="w-full py-2 border-b border-gray-200 focus:border-brand-600 outline-none text-sm font-bold transition-colors placeholder-gray-200 text-black"
-                          placeholder="e.g. 330ml"
+                          value={newProductData.image}
+                          onChange={(e) => setNewProductData({ ...newProductData, image: e.target.value })}
+                          className="w-full bg-white/5 border border-white/10 rounded px-3 py-2 text-xs text-white placeholder-gray-600 focus:border-brand-600 outline-none transition-colors"
+                          placeholder="https://..."
                         />
                       </div>
                     </div>
+                  </div>
 
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Description</label>
-                      <textarea
-                        value={newProductData.description}
-                        onChange={(e) => setNewProductData({ ...newProductData, description: e.target.value })}
-                        className="w-full py-2 border-b border-gray-200 focus:border-brand-600 outline-none text-sm font-medium transition-colors placeholder-gray-200 resize-none text-black"
-                        rows="2"
-                        placeholder="Enter product details..."
-                      />
+                  <div className="relative z-10">
+                    <p className="text-[10px] text-gray-500 leading-relaxed">
+                      Supported formats: PNG, JPG, WEBP.<br />
+                      Maximum file size: 5MB.<br />
+                      Ensure high resolution for best display.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Right Side - Form Details */}
+                <div className="flex-1 bg-white p-8 md:p-10 flex flex-col">
+                  <div className="flex justify-between items-start mb-8">
+                    <div className="flex items-center gap-2 text-brand-600">
+                      <Package className="w-5 h-5" />
+                      <span className="text-xs font-bold uppercase tracking-widest">Product Details</span>
                     </div>
+                    <button
+                      onClick={() => setIsAddProductModalOpen(false)}
+                      className="p-2 hover:bg-gray-100 rounded-full transition-colors -mr-2 -mt-2"
+                    >
+                      <X className="w-5 h-5 text-gray-400" />
+                    </button>
+                  </div>
 
-                    <div className="grid grid-cols-2 gap-6">
+                  <form onSubmit={handleAddProduct} className="space-y-6 flex-1 flex flex-col">
+                    <div className="space-y-6">
                       <div className="space-y-1">
-                        <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Price / Case</label>
-                        <div className="relative">
-                          <span className="absolute left-0 top-1/2 -translate-y-1/2 text-sm font-bold text-gray-400">$</span>
+                        <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Product Name</label>
+                        <input
+                          required
+                          value={newProductData.name}
+                          onChange={(e) => setNewProductData({ ...newProductData, name: e.target.value })}
+                          className="w-full py-2 border-b border-gray-200 focus:border-brand-600 outline-none text-xl font-bold uppercase tracking-tight transition-colors placeholder-gray-200 text-black"
+                          placeholder="E.G. BARAH LAGER"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-6">
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Brand</label>
+                          <select
+                            value={newProductData.brand}
+                            onChange={(e) => setNewProductData({ ...newProductData, brand: e.target.value })}
+                            className="w-full py-2 border-b border-gray-200 focus:border-brand-600 outline-none text-sm font-bold uppercase transition-colors bg-transparent cursor-pointer text-black"
+                          >
+                            <option value="">Select Brand</option>
+                            {brands.map(b => <option key={b} value={b}>{b}</option>)}
+                          </select>
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Size</label>
                           <input
-                            required
-                            type="number"
-                            step="0.01"
-                            value={newProductData.pricePerCase}
-                            onChange={(e) => setNewProductData({ ...newProductData, pricePerCase: e.target.value })}
-                            className="w-full pl-4 py-2 border-b border-gray-200 focus:border-brand-600 outline-none text-lg font-black transition-colors placeholder-gray-200 text-black"
-                            placeholder="0.00"
+                            value={newProductData.size}
+                            onChange={(e) => setNewProductData({ ...newProductData, size: e.target.value })}
+                            className="w-full py-2 border-b border-gray-200 focus:border-brand-600 outline-none text-sm font-bold transition-colors placeholder-gray-200 text-black"
+                            placeholder="e.g. 330ml"
                           />
                         </div>
                       </div>
+
                       <div className="space-y-1">
-                        <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Units / Case</label>
-                        <input
-                          type="number"
-                          value={newProductData.unitsPerCase}
-                          onChange={(e) => setNewProductData({ ...newProductData, unitsPerCase: e.target.value })}
-                          className="w-full py-2 border-b border-gray-200 focus:border-brand-600 outline-none text-lg font-black transition-colors placeholder-gray-200 text-black"
-                          placeholder="24"
+                        <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Description</label>
+                        <textarea
+                          value={newProductData.description}
+                          onChange={(e) => setNewProductData({ ...newProductData, description: e.target.value })}
+                          className="w-full py-2 border-b border-gray-200 focus:border-brand-600 outline-none text-sm font-medium transition-colors placeholder-gray-200 resize-none text-black"
+                          rows="2"
+                          placeholder="Enter product details..."
                         />
                       </div>
-                    </div>
-                  </div>
 
-                  <div className="mt-auto pt-8 flex justify-end gap-4">
-                    <button
-                      type="button"
-                      onClick={() => setIsAddProductModalOpen(false)}
-                      className="px-6 py-3 text-[10px] font-bold uppercase tracking-widest hover:bg-gray-50 transition-colors rounded-lg text-gray-500"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="submit"
-                      disabled={isSavingProduct}
-                      className="px-8 py-3 bg-brand-600 text-white text-[10px] font-bold uppercase tracking-widest hover:bg-black transition-colors shadow-lg hover:shadow-xl hover:-translate-y-1 rounded-lg flex items-center gap-2"
-                    >
-                      {isSavingProduct ? (
-                        <>
-                          <span className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-                          Saving...
-                        </>
-                      ) : (
-                        <>
-                          <Plus className="w-3 h-3" />
-                          Add Product
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </form>
-              </div>
-            </motion.div>
+                      <div className="grid grid-cols-2 gap-6">
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Price / Case</label>
+                          <div className="relative">
+                            <span className="absolute left-0 top-1/2 -translate-y-1/2 text-sm font-bold text-gray-400">$</span>
+                            <input
+                              required
+                              type="number"
+                              step="0.01"
+                              value={newProductData.pricePerCase}
+                              onChange={(e) => setNewProductData({ ...newProductData, pricePerCase: e.target.value })}
+                              className="w-full pl-4 py-2 border-b border-gray-200 focus:border-brand-600 outline-none text-lg font-black transition-colors placeholder-gray-200 text-black"
+                              placeholder="0.00"
+                            />
+                          </div>
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Units / Case</label>
+                          <input
+                            type="number"
+                            value={newProductData.unitsPerCase}
+                            onChange={(e) => setNewProductData({ ...newProductData, unitsPerCase: e.target.value })}
+                            className="w-full py-2 border-b border-gray-200 focus:border-brand-600 outline-none text-lg font-black transition-colors placeholder-gray-200 text-black"
+                            placeholder="24"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="mt-auto pt-8 flex justify-end gap-4">
+                      <button
+                        type="button"
+                        onClick={() => setIsAddProductModalOpen(false)}
+                        className="px-6 py-3 text-[10px] font-bold uppercase tracking-widest hover:bg-gray-50 transition-colors rounded-lg text-gray-500"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={isSavingProduct}
+                        className="px-8 py-3 bg-brand-600 text-white text-[10px] font-bold uppercase tracking-widest hover:bg-black transition-colors shadow-lg hover:shadow-xl hover:-translate-y-1 rounded-lg flex items-center gap-2"
+                      >
+                        {isSavingProduct ? (
+                          <>
+                            <span className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                            Saving...
+                          </>
+                        ) : (
+                          <>
+                            <Plus className="w-3 h-3" />
+                            Add Product
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </motion.div>
+            </div>
           </div>
         )}
       </AnimatePresence>

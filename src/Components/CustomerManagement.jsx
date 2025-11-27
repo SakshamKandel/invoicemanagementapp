@@ -249,10 +249,10 @@ const CustomerManagement = () => {
     <div className="min-h-screen bg-white font-sans text-black">
       {/* Editorial Header */}
       <div className="border-b-4 border-brand-600 bg-white sticky top-0 z-30">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-8">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
             <div>
-              <h1 className="text-4xl md:text-5xl font-black uppercase tracking-tighter mb-2">
+              <h1 className="text-2xl md:text-5xl font-black uppercase tracking-tighter mb-2">
                 Customer<br />Directory
               </h1>
               <div className="flex flex-wrap items-center gap-4 text-sm font-mono uppercase tracking-widest text-gray-500">
@@ -282,7 +282,7 @@ const CustomerManagement = () => {
           </div>
 
           {/* Search & Filter Bar */}
-          <div className="mt-8 flex flex-col md:flex-row gap-4 items-center border-t border-gray-100 pt-6">
+          <div className="mt-4 md:mt-8 flex flex-col md:flex-row gap-4 items-center border-t border-gray-100 pt-4 md:pt-6">
             <div className="relative flex-1 w-full">
               <Search className="absolute left-0 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
               <input
