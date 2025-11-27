@@ -142,14 +142,9 @@ function Navigation({ children }) {
 
       {/* Main Content */}
       <main className="max-w-[1760px] mx-auto px-6 py-8">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
-          className="min-h-[calc(100vh-200px)]"
-        >
+        <div className="min-h-[calc(100vh-200px)]">
           {children}
-        </motion.div>
+        </div>
       </main>
     </div>
   );

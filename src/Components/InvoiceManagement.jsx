@@ -517,7 +517,7 @@ const InvoiceManagement = () => {
                   layout
                   className="group relative bg-white border-b border-gray-100 hover:bg-gray-50 transition-colors duration-300"
                 >
-                  <div className="p-6 flex flex-col md:flex-row items-start md:items-center gap-6">
+                  <div className="p-4 md:p-6 flex flex-col md:flex-row items-start md:items-center gap-4 md:gap-6">
                     {/* Status Indicator */}
                     <div className={`w-1 self-stretch ${invoice.status === 'paid' ? 'bg-green-500' :
                         invoice.status === 'pending' ? 'bg-yellow-500' :
@@ -527,14 +527,14 @@ const InvoiceManagement = () => {
                       }`}></div>
 
                     {/* Main Info */}
-                    <div className="flex-1 min-w-0 grid grid-cols-1 md:grid-cols-4 gap-6 items-center">
-                      <div className="col-span-1">
-                        <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Invoice #</p>
-                        <h3 className="text-xl font-black text-black uppercase tracking-tight">{invoice.invoiceNumber}</h3>
+                    <div className="flex-1 min-w-0 w-full grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 items-center">
+                      <div className="col-span-1 order-1">
+                        <p className="text-[10px] md:text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Invoice #</p>
+                        <h3 className="text-lg md:text-xl font-black text-black uppercase tracking-tight">{invoice.invoiceNumber}</h3>
                       </div>
 
-                      <div className="col-span-1">
-                        <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Client</p>
+                      <div className="col-span-1 order-3 md:order-2">
+                        <p className="text-[10px] md:text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Client</p>
                         <p className="text-sm font-bold text-gray-900 truncate">{invoice.customerName}</p>
                         {invoice.statusNote && (
                           <p className="text-[10px] text-red-500 font-bold uppercase tracking-wider mt-1 truncate">
@@ -543,23 +543,23 @@ const InvoiceManagement = () => {
                         )}
                       </div>
 
-                      <div className="col-span-1">
-                        <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Date</p>
+                      <div className="col-span-1 order-4 md:order-3">
+                        <p className="text-[10px] md:text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Date</p>
                         <p className="text-sm font-mono text-gray-600">{formatDate(invoice.createdAt)}</p>
                       </div>
 
-                      <div className="col-span-1 text-right">
-                        <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Amount</p>
-                        <p className="text-xl font-black text-black">{formatCurrency(invoice.total || invoice.totalAmount)}</p>
+                      <div className="col-span-1 text-right order-2 md:order-4">
+                        <p className="text-[10px] md:text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Amount</p>
+                        <p className="text-lg md:text-xl font-black text-black">{formatCurrency(invoice.total || invoice.totalAmount)}</p>
                       </div>
                     </div>
 
-                    {/* Actions (Slide in on hover) */}
-                    <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 transform translate-x-4 group-hover:translate-x-0">
+                    {/* Actions (Always visible on mobile, slide in on hover desktop) */}
+                    <div className="flex items-center gap-2 mt-2 md:mt-0 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-200 transform translate-x-0 md:translate-x-4 md:group-hover:translate-x-0 w-full md:w-auto justify-end">
                       {invoice.status !== 'paid' && (
                         <button
                           onClick={() => updateInvoiceStatus(invoice.id, 'paid')}
-                          className="p-2 hover:bg-green-500 hover:text-white transition-colors"
+                          className="p-2 bg-gray-100 md:bg-transparent hover:bg-green-500 hover:text-white transition-colors rounded md:rounded-none"
                           title="Mark Paid"
                         >
                           <CheckCircle className="w-4 h-4" />
@@ -569,7 +569,7 @@ const InvoiceManagement = () => {
                       {invoice.status !== 'cancelled' && (
                         <button
                           onClick={() => updateInvoiceStatus(invoice.id, 'cancelled')}
-                          className="p-2 hover:bg-red-500 hover:text-white transition-colors"
+                          className="p-2 bg-gray-100 md:bg-transparent hover:bg-red-500 hover:text-white transition-colors rounded md:rounded-none"
                           title="Mark Returned"
                         >
                           <XCircle className="w-4 h-4" />
@@ -579,7 +579,7 @@ const InvoiceManagement = () => {
                       {invoice.status !== 'expired' && (
                         <button
                           onClick={() => updateInvoiceStatus(invoice.id, 'expired')}
-                          className="p-2 hover:bg-orange-500 hover:text-white transition-colors"
+                          className="p-2 bg-gray-100 md:bg-transparent hover:bg-orange-500 hover:text-white transition-colors rounded md:rounded-none"
                           title="Mark Expired"
                         >
                           <Clock className="w-4 h-4" />
@@ -587,21 +587,21 @@ const InvoiceManagement = () => {
                       )}
                       <button
                         onClick={() => { setSelectedInvoice(invoice); setIsPreviewModalOpen(true); }}
-                        className="p-2 hover:bg-black hover:text-white transition-colors"
+                        className="p-2 bg-gray-100 md:bg-transparent hover:bg-black hover:text-white transition-colors rounded md:rounded-none"
                         title="View"
                       >
                         <Eye className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => generatePDF(invoice)}
-                        className="p-2 hover:bg-black hover:text-white transition-colors"
+                        className="p-2 bg-gray-100 md:bg-transparent hover:bg-black hover:text-white transition-colors rounded md:rounded-none"
                         title="Download"
                       >
                         <Download className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => deleteInvoice(invoice.id)}
-                        className="p-2 hover:bg-brand-600 hover:text-white transition-colors"
+                        className="p-2 bg-gray-100 md:bg-transparent hover:bg-brand-600 hover:text-white transition-colors rounded md:rounded-none"
                         title="Delete"
                       >
                         <Trash2 className="w-4 h-4" />
